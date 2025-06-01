@@ -4,10 +4,10 @@
 // 重要：请将下面的占位符替换为你的实际Supabase项目信息
 const SUPABASE_CONFIG = {
     // 项目URL - 在 Supabase 项目设置 > API 中找到
-    url: 'https://your-project-id.supabase.co',
+    url: 'https://uiguoabevzivkxiublzy.supabase.co',
     
     // 匿名密钥 - 在 Supabase 项目设置 > API 中找到 anon public key
-    anonKey: 'your-anon-key-here',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpZ3VvYWJldnppdmt4aXVibHp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3Njg1MDksImV4cCI6MjA2NDM0NDUwOX0.CyVuBUnDeVlz9otEkYmAf7jMGMecquT3QbePko1cTRE',
     
     // 开发者钱包地址（接收土地销售收入）
     developerWallet: '7jxcMBPumwn6Th9jo66px9bdgReKZJ9wGh3xJKdJDr3v',
