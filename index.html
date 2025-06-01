@@ -1,230 +1,679 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>SOL Grid Marketplace</title>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,700&display=swap">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Land Game Website UI</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: '#165DFF',
+              50: '#E6F0FF',
+              100: '#CCDEFF',
+              200: '#99BDFF',
+              300: '#669CFF',
+              400: '#337BFF',
+              500: '#165DFF',
+              600: '#0047E1',
+              700: '#003BB8',
+              800: '#002F8F',
+              900: '#002366'
+            },
+            secondary: {
+              DEFAULT: '#722ED1',
+              50: '#F5EBFF',
+              100: '#EAD6FF',
+              200: '#D5ADFF',
+              300: '#C185FF',
+              400: '#AC5CFF',
+              500: '#722ED1',
+              600: '#5B25A8',
+              700: '#441C7F',
+              800: '#2E1356',
+              900: '#170A2D'
+            },
+            accent: {
+              DEFAULT: '#FF7D00',
+              50: '#FFF2E6',
+              100: '#FFE5CC',
+              200: '#FFCC99',
+              300: '#FFB266',
+              400: '#FF9933',
+              500: '#FF7D00',
+              600: '#CC6400',
+              700: '#994B00',
+              800: '#663200',
+              900: '#331900'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
   <style>
     body {
-      margin: 0;
       font-family: 'Inter', sans-serif;
-      background: #181e2a;
-      color: #bfc9e0;
+      background-color: #F2F3F5;
     }
-    .navbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #23283a;
-      padding: 16px 32px;
-      border-bottom: 1px solid #23283a;
+
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-in-out;
     }
-    .navbar .logo {
-      color: #7b5cff;
-      font-weight: bold;
-      font-size: 1.5em;
-      letter-spacing: 1px;
+
+    .animate-slideInRight {
+      animation: slideInRight 0.3s ease-out;
     }
-    .navbar .menu {
-      display: flex;
-      gap: 32px;
-      align-items: center;
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
-    .navbar .menu a {
-      color: #bfc9e0;
-      text-decoration: none;
-      font-size: 1em;
-      padding: 4px 12px;
-      border-radius: 6px;
-      transition: background 0.2s;
+
+    @keyframes slideInRight {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
     }
-    .navbar .menu a.active, .navbar .menu a:hover {
-      background: #23283a;
-      color: #7b5cff;
+
+    .modal {
+      transition: opacity 0.3s ease-in-out;
     }
-    .navbar .wallet {
-      background: #23283a;
-      color: #bfc9e0;
-      border-radius: 8px;
-      padding: 8px 16px;
-      font-size: 0.95em;
-      border: 1px solid #2d3350;
+
+    .land-card {
+      transition: all 0.3s ease-in-out;
     }
-    .container {
-      display: flex;
-      margin: 32px 0 0 0;
-      min-height: 80vh;
+
+    .land-card:hover {
+      transform: scale(1.05);
     }
-    .sidebar {
-      width: 260px;
-      margin-left: 32px;
-      background: #20263a;
-      border-radius: 12px;
-      padding: 24px 20px;
-      box-shadow: 0 2px 12px #0002;
-      height: fit-content;
-    }
-    .sidebar h3 {
-      color: #7b5cff;
-      margin-top: 0;
-      font-size: 1.1em;
-      margin-bottom: 16px;
-    }
-    .sidebar .info {
-      font-size: 0.98em;
-      line-height: 1.7;
-      word-break: break-all;
-    }
-    .main-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-left: 32px;
-      margin-right: 32px;
-    }
-    .main-content h1 {
-      color: #3fd8ff;
-      margin-bottom: 0;
-      margin-top: 0;
-      font-size: 2em;
-    }
-    .main-content p {
-      color: #bfc9e0;
-      margin-top: 8px;
-      margin-bottom: 32px;
-      font-size: 1.1em;
-    }
-    .grid-market {
-      display: grid;
-      grid-template-columns: repeat(8, 48px);
-      grid-template-rows: repeat(8, 48px);
-      gap: 12px;
-      margin-bottom: 32px;
-    }
-    .grid-block {
-      background: #23283a;
-      border: 1.5px solid #2d3350;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: border 0.2s, box-shadow 0.2s;
-      position: relative;
-    }
-    .grid-block:hover {
-      border: 1.5px solid #7b5cff;
-      box-shadow: 0 0 8px #7b5cff44;
-    }
-    .grid-block svg {
-      width: 22px;
-      height: 22px;
-      stroke: #7b5cff;
-      fill: none;
-      stroke-width: 2;
-    }
-    .airdrop-card {
-      position: absolute;
-      right: 48px;
-      top: 90px;
-      background: #20263a;
-      border-radius: 12px;
-      padding: 20px 32px;
-      box-shadow: 0 2px 12px #0002;
-      min-width: 220px;
-      text-align: center;
-      border: 1.5px solid #2d3350;
-    }
-    .airdrop-card .title {
-      color: #3fd8ff;
-      font-size: 1.1em;
-      margin-bottom: 8px;
-    }
-    .airdrop-card .timer {
-      font-size: 2em;
-      color: #7b5cff;
-      margin-bottom: 4px;
-    }
-    .airdrop-card .desc {
-      font-size: 0.95em;
-      color: #bfc9e0;
-    }
-    .footer-info {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      width: 420px;
-      margin: 0 auto 24px auto;
-      color: #bfc9e0;
-      font-size: 1em;
-      background: #20263a;
-      border-radius: 10px;
-      padding: 10px 24px;
-      border: 1.5px solid #2d3350;
-    }
-    .footer-info .sold {
-      color: #7b5cff;
-      font-weight: bold;
-      font-size: 1.1em;
-    }
-    @media (max-width: 1100px) {
-      .container { flex-direction: column; }
-      .sidebar { margin: 0 auto 24px auto; }
-      .main-content { margin: 0; }
-      .airdrop-card { position: static; margin: 24px auto 0 auto; }
+
+    .notification {
+      animation: slideInRight 0.3s ease-out;
     }
   </style>
 </head>
-<body>
-  <div class="navbar">
-    <div class="logo">SOL Grid</div>
-    <div class="menu">
-      <a href="#" class="active">Grid</a>
-      <a href="#">Marketplace</a>
-      <a href="#">My Blocks</a>
-      <a href="#">Wallet</a>
+<body class="min-h-screen bg-[#F2F3F5]">
+  <!-- Header -->
+  <header class="bg-white shadow-sm fixed w-full top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <div class="flex-shrink-0 flex items-center">
+            <svg class="h-8 w-8 text-[#165DFF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            <span class="ml-2 text-xl font-bold text-[#1D2129]">LandVerse</span>
+          </div>
+          <nav class="hidden md:ml-10 md:flex md:space-x-8">
+            <a href="#" class="text-[#165DFF] font-medium">Home</a>
+            <a href="#" class="text-[#1D2129] hover:text-[#165DFF] transition-colors font-medium">Marketplace</a>
+            <a href="#" class="text-[#1D2129] hover:text-[#165DFF] transition-colors font-medium">My Lands</a>
+            <a href="#" class="text-[#1D2129] hover:text-[#165DFF] transition-colors font-medium">About</a>
+          </nav>
+        </div>
+        <div class="flex items-center">
+          <button id="walletButton" class="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#165DFF] hover:bg-[#0E4BBF] transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#165DFF]">
+            <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="6" width="20" height="12" rx="2"/>
+              <path d="M22 10H2"/>
+              <path d="M6 14h4"/>
+            </svg>
+            Connect Wallet
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="wallet">2kve...CF7Q (0.90 SOL)</div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="pt-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-[#1D2129] mb-4">Virtual Land Marketplace</h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+          Buy, sell, and trade virtual land parcels in our digital world.
+          Connect your wallet to start your ownership journey.
+        </p>
+      </div>
+
+      <!-- Stats Section -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-gray-500 text-sm font-medium mb-1">Base Land Price</h3>
+              <p class="text-2xl font-bold text-[#1D2129]">0.25 ETH</p>
+              <span class="text-sm font-medium text-green-500">+5.2%</span>
+            </div>
+            <div class="p-3 rounded-full bg-[#165DFF] bg-opacity-10">
+              <svg class="h-6 w-6 text-[#165DFF]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2v20M17 7l-5-5-5 5M2 13h20M7 17l5 5 5-5"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-gray-500 text-sm font-medium mb-1">Total Land Parcels Sold</h3>
+              <p class="text-2xl font-bold text-[#1D2129]">187/256</p>
+            </div>
+            <div class="p-3 rounded-full bg-[#722ED1] bg-opacity-10">
+              <svg class="h-6 w-6 text-[#722ED1]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 3h18v18H3zM9 9h6v6H9z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <div class="flex items-start justify-between">
+            <div>
+              <h3 class="text-gray-500 text-sm font-medium mb-1">Your Land Holdings</h3>
+              <p class="text-2xl font-bold text-[#1D2129]">3 parcels</p>
+            </div>
+            <div class="p-3 rounded-full bg-[#FF7D00] bg-opacity-10">
+              <svg class="h-6 w-6 text-[#FF7D00]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Land Grid -->
+      <div id="landGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+        <!-- Land cards will be dynamically inserted here -->
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-[#1D2129] text-white mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="col-span-1 md:col-span-1">
+          <h3 class="text-lg font-semibold mb-4">LandVerse</h3>
+          <p class="text-gray-400 text-sm">
+            A decentralized platform for virtual land ownership and trading.
+            Build, explore, and connect in the metaverse.
+          </p>
+        </div>
+        
+        <div class="col-span-1">
+          <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">Home</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">Marketplace</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">My Lands</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">About</a></li>
+          </ul>
+        </div>
+        
+        <div class="col-span-1">
+          <h3 class="text-lg font-semibold mb-4">Resources</h3>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">Documentation</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">API</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">FAQ</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white transition-colors text-sm">Terms of Service</a></li>
+          </ul>
+        </div>
+        
+        <div class="col-span-1">
+          <h3 class="text-lg font-semibold mb-4">Connect</h3>
+          <div class="flex space-x-4 mb-4">
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/>
+              </svg>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/>
+              </svg>
+            </a>
+            <a href="#" class="text-gray-400 hover:text-white transition-colors">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <path d="M22 6l-10 7L2 6"/>
+              </svg>
+            </a>
+          </div>
+          <p class="text-gray-400 text-sm">Subscribe to our newsletter</p>
+          <div class="mt-2 flex">
+            <input 
+              type="email" 
+              placeholder="Your email" 
+              class="px-4 py-2 rounded-l-md text-gray-900 text-sm focus:outline-none focus:ring-1 focus:ring-[#165DFF]"
+            />
+            <button class="bg-[#165DFF] px-4 py-2 rounded-r-md text-white text-sm hover:bg-[#0E4BBF] transition-colors">
+              Subscribe
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-8 pt-8 border-t border-gray-700">
+        <p class="text-center text-gray-400 text-sm">
+          © <span id="currentYear"></span> LandVerse. All rights reserved.
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modals -->
+  <div id="landDetailModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <!-- Modal content will be dynamically inserted here -->
   </div>
-  <div class="container">
-    <div class="sidebar">
-      <h3>Token Information</h3>
-      <div class="info">
-        <b>Contract Address:</b><br>
-        4RoLEw2EcABiB5QqVybgaR3xtdFEpiN79RkYJt5xpfpf<br>
-        <b>Token Name:</b><br>
-        SOL Grid Token (SGT)<br>
-        <b>Total Supply:</b><br>
-        1,000,000 SGT<br>
-        <b>Airdrop Amount:</b><br>
-        10 SGT per block owned
-      </div>
-    </div>
-    <div class="main-content">
-      <h1>Grid Marketplace</h1>
-      <p>Browse and purchase grid blocks in our 8×8 marketplace. Each block can be customized with your own images.</p>
-      <div class="grid-market">
-        <!-- 8x8 blocks -->
-        <!-- Repeat 64 times -->
-        <!-- You can use a loop in JS for real projects, here手动写几个代表 -->
-        <div class="grid-block"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 10h6M9 14h6M12 6v12"/></svg></div>
-        <!-- ... 复制上面一行，直到64个 ... -->
-        <!-- 这里只写几个，实际请复制到64个 -->
-        <div class="grid-block"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 10h6M9 14h6M12 6v12"/></svg></div>
-        <div class="grid-block"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 10h6M9 14h6M12 6v12"/></svg></div>
-        <!-- ... -->
-      </div>
-      <div class="footer-info">
-        <span>Initial owner<br>4RoLEw2e...YJt5xpfpf</span>
-        <span class="sold">Blocks sold<br>0 / 64</span>
-      </div>
-    </div>
-    <div class="airdrop-card">
-      <div class="title">Next Airdrop</div>
-      <div class="timer">00:06:12</div>
-      <div class="desc">Not eligible<br>Grid owners receive tokens at the top of each hour</div>
-    </div>
+
+  <div id="transactionModal" class="fixed inset-0 z-50 overflow-y-auto hidden">
+    <!-- Transaction modal content will be dynamically inserted here -->
   </div>
+
+  <!-- Notification Container -->
+  <div id="notificationContainer" class="fixed top-4 right-4 z-50">
+    <!-- Notifications will be dynamically inserted here -->
+  </div>
+
+  <script>
+    // Land data and state management
+    const state = {
+      userAddress: null,
+      lands: [],
+      selectedLand: null,
+      notifications: []
+    };
+
+    // Generate mock land data
+    function generateMockLands() {
+      const lands = [];
+      const mockOwners = [
+        null,
+        '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199',
+        '0xdD870fA1b7C4700F2BD7f44238821C26f7392148'
+      ];
+
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          const id = y * 8 + x;
+          const randomIndex = Math.floor(Math.random() * mockOwners.length);
+          const owner = mockOwners[randomIndex];
+          const isForSale = owner !== null && Math.random() > 0.7;
+          const price = isForSale ? parseFloat((0.2 + Math.random() * 0.8).toFixed(2)) : null;
+          
+          lands.push({
+            id,
+            x,
+            y,
+            owner,
+            price,
+            isForSale,
+            description: `Land parcel at coordinates (${x}, ${y}). A prime location in the virtual world.`
+          });
+        }
+      }
+      return lands;
+    }
+
+    // Initialize land data
+    state.lands = generateMockLands();
+
+    // Utility functions
+    function formatAddress(address) {
+      if (!address) return '-';
+      return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    }
+
+    function formatPrice(price) {
+      if (price === null) return '-';
+      return `${price.toFixed(2)} ETH`;
+    }
+
+    // UI Components
+    function createLandCard(land) {
+      const card = document.createElement('div');
+      card.className = 'land-card relative border-2 rounded-lg p-3 h-full aspect-square flex flex-col justify-between cursor-pointer transition-all duration-300 hover:shadow-lg';
+      
+      let statusClass = 'bg-gray-100 border-gray-300';
+      let statusBadge = 'Available';
+      
+      if (land.owner === state.userAddress) {
+        statusClass = 'bg-green-50 border-green-500';
+        statusBadge = 'My Land';
+      } else if (land.isForSale) {
+        statusClass = 'bg-blue-50 border-yellow-500';
+        statusBadge = 'For Sale';
+      } else if (land.owner) {
+        statusClass = 'bg-blue-50 border-blue-500';
+        statusBadge = 'Owned';
+      }
+      
+      card.className += ` ${statusClass}`;
+      
+      card.innerHTML = `
+        <div class="absolute top-2 right-2">
+          <span class="text-xs px-2 py-1 rounded-full ${
+            land.owner === state.userAddress ? 'bg-green-500 text-white' :
+            land.isForSale ? 'bg-yellow-500 text-white' :
+            land.owner ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+          }">${statusBadge}</span>
+        </div>
+        
+        <div class="mt-6">
+          <p class="text-xs font-medium text-gray-700">Land ID: ${land.id}</p>
+          <p class="text-xs text-gray-500">(${land.x}, ${land.y})</p>
+        </div>
+        
+        <div class="mt-auto">
+          ${land.isForSale ? `
+            <p class="text-sm font-bold text-[#FF7D00]">${formatPrice(land.price)}</p>
+          ` : ''}
+          ${land.owner ? `
+            <p class="text-xs text-gray-600 truncate">
+              Owner: ${formatAddress(land.owner)}
+            </p>
+          ` : ''}
+        </div>
+      `;
+      
+      card.addEventListener('click', () => showLandDetailModal(land));
+      
+      return card;
+    }
+
+    function showLandDetailModal(land) {
+      const modal = document.getElementById('landDetailModal');
+      state.selectedLand = land;
+      
+      modal.className = 'fixed inset-0 z-50 overflow-y-auto';
+      modal.innerHTML = `
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+          
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+          
+          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="absolute top-0 right-0 pt-4 pr-4">
+              <button onclick="closeLandDetailModal()" class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#165DFF]">
+                <span class="sr-only">Close</span>
+                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div class="sm:flex sm:items-start">
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    Land Parcel (${land.x}, ${land.y})
+                  </h3>
+                  
+                  <div class="mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <p class="text-sm text-gray-500">Land ID</p>
+                        <p class="font-medium">${land.id}</p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500">Status</p>
+                        <p class="font-medium">
+                          ${!land.owner ? 'Available' :
+                            land.owner === state.userAddress ? 'Owned by you' :
+                            land.isForSale ? 'For Sale' : 'Owned by other'}
+                        </p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500">Owner</p>
+                        <p class="font-medium">${land.owner ? formatAddress(land.owner) : 'None'}</p>
+                      </div>
+                      <div>
+                        <p class="text-sm text-gray-500">Price</p>
+                        <p class="font-medium">${formatPrice(land.price || 0.25)}</p>
+                      </div>
+                    </div>
+                    
+                    <p class="text-sm text-gray-700 mb-2">Description:</p>
+                    <p class="text-sm text-gray-600">${land.description}</p>
+                  </div>
+                  
+                  <div class="mt-6">
+                    ${!land.owner || land.isForSale ? `
+                      <button
+                        onclick="showTransactionModal('buy')"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#165DFF] text-base font-medium text-white hover:bg-[#0E4BBF] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#165DFF] sm:text-sm transition-colors"
+                      >
+                        Buy for ${formatPrice(land.price || 0.25)}
+                      </button>
+                    ` : land.owner === state.userAddress && !land.isForSale ? `
+                      <div>
+                        <div class="mb-4">
+                          <label class="block text-sm font-medium text-gray-700 mb-1">
+                            Sale Price (ETH)
+                          </label>
+                          <input
+                            type="number"
+                            id="sellPrice"
+                            class="focus:ring-[#165DFF] focus:border-[#165DFF] block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+                            placeholder="0.00"
+                            step="0.01"
+                            min="0"
+                          />
+                        </div>
+                        
+                        <button
+                          onclick="showTransactionModal('sell')"
+                          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#FF7D00] text-base font-medium text-white hover:bg-[#E06D00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF7D00] sm:text-sm transition-colors"
+                        >
+                          List for Sale
+                        </button>
+                      </div>
+                    ` : land.owner === state.userAddress && land.isForSale ? `
+                      <button
+                        onclick="showTransactionModal('cancel')"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-500 text-base font-medium text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:text-sm transition-colors"
+                      >
+                        Cancel Sale
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showTransactionModal(type) {
+      const modal = document.getElementById('transactionModal');
+      const land = state.selectedLand;
+      let price = type === 'sell' ? 
+        parseFloat(document.getElementById('sellPrice').value) : 
+        (land.price || 0.25);
+      
+      modal.className = 'fixed inset-0 z-50 overflow-y-auto';
+      modal.innerHTML = `
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+          
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+          
+          <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+              <div class="sm:flex sm:items-start">
+                <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                  <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+                
+                <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">
+                    ${type === 'buy' ? 'Confirm Purchase' :
+                      type === 'sell' ? 'Confirm Listing' : 'Confirm Cancellation'}
+                  </h3>
+                  <div class="mt-2">
+                    <p class="text-sm text-gray-500">
+                      ${type === 'buy' ? 
+                        `You are about to purchase land parcel (${land.x}, ${land.y}) for ${formatPrice(price)}.` :
+                        type === 'sell' ?
+                        `You are about to list land parcel (${land.x}, ${land.y}) for sale at ${formatPrice(price)}.` :
+                        `You are about to cancel the sale of land parcel (${land.x}, ${land.y}).`}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+              <button
+                onclick="processTransaction('${type}', ${price})"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-[#165DFF] text-base font-medium text-white hover:bg-[#0E4BBF] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#165DFF] sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                Confirm
+              </button>
+              <button
+                onclick="closeTransactionModal()"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#165DFF] sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function showNotification(message, type = 'success') {
+      const notification = document.createElement('div');
+      notification.className = `notification mb-4 bg-white shadow-lg rounded-lg pointer-events-auto border-l-4 ${
+        type === 'success' ? 'border-green-500' :
+        type === 'error' ? 'border-red-500' : 'border-blue-500'
+      }`;
+      
+      notification.innerHTML = `
+        <div class="p-4">
+          <div class="flex items-start">
+            <div class="flex-shrink-0">
+              ${type === 'success' ? `
+                <svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              ` : type === 'error' ? `
+                <svg class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              ` : `
+                <svg class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+              `}
+            </div>
+            <div class="ml-3 w-0 flex-1 pt-0.5">
+              <p class="text-sm font-medium text-gray-900">${message}</p>
+            </div>
+            <div class="ml-4 flex-shrink-0 flex">
+              <button onclick="this.parentElement.parentElement.parentElement.parentElement.remove()" class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500">
+                <span class="sr-only">Close</span>
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('notificationContainer').appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 5000);
+    }
+
+    // Event handlers
+    function connectWallet() {
+      state.userAddress = '0x71C7656EC7ab88b098defB751B7401B5f6d8976F';
+      const button = document.getElementById('walletButton');
+      button.innerHTML = `
+        <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="6" width="20" height="12" rx="2"/>
+          <path d="M22 10H2"/>
+          <path d="M6 14h4"/>
+        </svg>
+        ${formatAddress(state.userAddress)}
+      `;
+      showNotification('Wallet connected successfully!');
+      renderLandGrid();
+    }
+
+    function processTransaction(type, price) {
+      const land = state.selectedLand;
+      
+      setTimeout(() => {
+        if (type === 'buy') {
+          land.owner = state.userAddress;
+          land.isForSale = false;
+          land.price = null;
+          showNotification('Land purchased successfully!');
+        } else if (type === 'sell') {
+          land.isForSale = true;
+          land.price = price;
+          showNotification('Land listed for sale!');
+        } else if (type === 'cancel') {
+          land.isForSale = false;
+          land.price = null;
+          showNotification('Sale cancelled successfully!');
+        }
+        
+        closeTransactionModal();
+        closeLandDetailModal();
+        renderLandGrid();
+      }, 1000);
+    }
+
+    function closeLandDetailModal() {
+      const modal = document.getElementById('landDetailModal');
+      modal.className = 'fixed inset-0 z-50 overflow-y-auto hidden';
+      state.selectedLand = null;
+    }
+
+    function closeTransactionModal() {
+      const modal = document.getElementById('transactionModal');
+      modal.className = 'fixed inset-0 z-50 overflow-y-auto hidden';
+    }
+
+    // Rendering
+    function renderLandGrid() {
+      const grid = document.getElementById('landGrid');
+      grid.innerHTML = '';
+      state.lands.forEach(land => {
+        grid.appendChild(createLandCard(land));
+      });
+    }
+
+    // Initialize
+    document.getElementById('currentYear').textContent = new Date().getFullYear();
+    document.getElementById('walletButton').addEventListener('click', connectWallet);
+    renderLandGrid();
+  </script>
 </body>
 </html>
