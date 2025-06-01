@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>土地游戏 - 数字土地所有权</title>
+    
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- JS Libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
+    <script src="./supabase-config.js"></script>
+    
+    <style>
+        :root {
+            --primary: #3B82F6;
+            --secondary: #8B5CF6;
+            --success: #10B981;
+            --warning: #F59E0B;
+            --danger: #EF4444;
+        }
+        
+        .grid-land {
+            aspect-ratio: 1;
+            border: 2px solid #e5e7eb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .grid-land:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .grid-land.available {
+            background: linear-gradient(45deg, #fef3c7, #fde68a);
+            border-color: #f59e0b;
+        }
+        
+        .grid-land.owned {
+            background: linear-gradient(45deg, #dcfce7, #bbf7d0);
+            border-color: #10b981;
+        }
+        
+        .grid-land.for-sale {
+            background: linear-gradient(45deg, #dbeafe, #bfdbfe);
+            border-color: #3b82f6;
+        }
+        
+        .grid-land.my-land {
+            background: linear-gradient(45deg, #f3e8ff, #e9d5ff);
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 2000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+        .notification.warning { background: var(--warning); }
+        .notification.info { background: var(--primary); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- 顶部导航 -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-map text-blue-600 text-2xl"></i>
+                    <h1 class="text-xl font-bold text-gray-900">土地游戏</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <div id="wallet-section">
+                        <button id="connect-wallet" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-wallet mr-2"></i>连接钱包
+                        </button>
+                        <div id="wallet-connected" class="hidden flex items-center space-x-3">
+                            <span id="wallet-address" class="text-sm bg-gray-100 px-3 py-2 rounded-lg font-mono"></span>
+                            <button id="disconnect-wallet" class="text-gray-500 hover:text-red-500">
+                                <i class="fas fa-sign-out-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- 统计信息 -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">当前基础价格</p>
+                        <p class="text-2xl font-bold text-gray-900"><span id="base-price">0.050</span> SOL</p>
+                    </div>
+                    <i class="fas fa-tag text-blue-600 text-2xl"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">已售土地</p>
+                        <p class="text-2xl font-bold text-gray-900"><span id="sold-count">0</span> / 64</p>
+                    </div>
+                    <i class="fas fa-chart-bar text-green-600 text-2xl"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">我的土地</p>
+                        <p class="text-2xl font-bold text-gray-900"><span id="my-land-count">0</span> 块</p>
+                    </div>
+                    <i class="fas fa-user text-purple-600 text-2xl"></i>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-sm">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-600">总价值</p>
+                        <p class="text-2xl font-bold text-gray-900"><span id="total-value">0.000</span> SOL</p>
+                    </div>
+                    <i class="fas fa-coins text-yellow-600 text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- 土地网格 -->
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-900">土地地图 (8×8)</h2>
+                <button id="refresh-btn" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+                    <i class="fas fa-refresh mr-2"></i>刷新
+                </button>
+            </div>
+            
+            <div id="land-grid" class="grid grid-cols-8 gap-2 max-w-2xl mx-auto">
+                <!-- 土地网格将通过JavaScript生成 -->
+            </div>
+        </div>
+    </main>
+
+    <!-- 土地详情模态框 -->
+    <div id="land-modal" class="modal">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold" id="modal-title">土地详情</h3>
+                <button id="close-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="modal-content">
+                <!-- 内容将通过JavaScript动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易确认模态框 -->
+    <div id="transaction-modal" class="modal">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold">确认交易</h3>
+                <button id="close-tx-modal" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="tx-content">
+                <!-- 交易详情将通过JavaScript动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 配置
+        const CONFIG = {
+            supabase: {
+                url: window.SUPABASE_CONFIG?.url || 'https://your-project-id.supabase.co',
+                anonKey: window.SUPABASE_CONFIG?.anonKey || 'your-anon-key-here'
+            },
+            game: {
+                gridSize: window.SUPABASE_CONFIG?.gameConfig?.gridSize || 8,
+                basePrice: window.SUPABASE_CONFIG?.gameConfig?.basePrice || 0.05,
+                priceIncreaseThreshold: window.SUPABASE_CONFIG?.gameConfig?.priceIncreaseThreshold || 8,
+                priceMultiplier: window.SUPABASE_CONFIG?.gameConfig?.priceMultiplier || 2,
+                developerWallet: window.SUPABASE_CONFIG?.developerWallet || '7jxcMBPumwn6Th9jo66px9bdgReKZJ9wGh3xJKdJDr3v'
+            }
+        };
+
+        // 全局变量
+        let supabaseClient = null;
+        let currentWallet = null;
+        let lands = [];
+        let currentLandId = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 检查配置
+                if (CONFIG.supabase.url.includes('your-project-id')) {
+                    showNotification('请先配置Supabase信息！', 'error');
+                    return;
+                }
+
+                // 初始化Supabase
+                supabaseClient = supabase.createClient(CONFIG.supabase.url, CONFIG.supabase.anonKey);
+                
+                // 绑定事件
+                bindEvents();
+                
+                // 检查钱包连接
+                checkWalletConnection();
+                
+                // 加载数据
+                await loadGameData();
+                
+                showNotification('游戏加载完成！', 'success');
+            } catch (error) {
+                console.error('初始化失败:', error);
+                showNotification('初始化失败: ' + error.message, 'error');
+            }
+        });
+
+        // 绑定事件
+        function bindEvents() {
+            document.getElementById('connect-wallet').onclick = connectWallet;
+            document.getElementById('disconnect-wallet').onclick = disconnectWallet;
+            document.getElementById('refresh-btn').onclick = loadGameData;
+            document.getElementById('close-modal').onclick = () => hideModal('land-modal');
+            document.getElementById('close-tx-modal').onclick = () => hideModal('transaction-modal');
+        }
+
+        // 检查钱包连接
+        function checkWalletConnection() {
+            const stored = localStorage.getItem('connectedWallet');
+            if (stored && window.solana?.isConnected) {
+                currentWallet = JSON.parse(stored);
+                updateWalletUI();
+            }
+        }
+
+        // 连接钱包
+        async function connectWallet() {
+            try {
+                if (!window.solana) {
+                    showNotification('请安装Phantom钱包', 'error');
+                    window.open('https://phantom.app/', '_blank');
+                    return;
+                }
+
+                const response = await window.solana.connect();
+                currentWallet = { publicKey: response.publicKey.toString() };
+                
+                localStorage.setItem('connectedWallet', JSON.stringify(currentWallet));
+                updateWalletUI();
+                await loadGameData();
+                
+                showNotification('钱包连接成功！', 'success');
+            } catch (error) {
+                console.error('钱包连接失败:', error);
+                showNotification('钱包连接失败', 'error');
+            }
+        }
+
+        // 断开钱包
+        function disconnectWallet() {
+            currentWallet = null;
+            localStorage.removeItem('connectedWallet');
+            updateWalletUI();
+            loadGameData();
+            showNotification('钱包已断开', 'info');
+        }
+
+        // 更新钱包UI
+        function updateWalletUI() {
+            const connectBtn = document.getElementById('connect-wallet');
+            const connectedDiv = document.getElementById('wallet-connected');
+            const addressSpan = document.getElementById('wallet-address');
+
+            if (currentWallet) {
+                connectBtn.classList.add('hidden');
+                connectedDiv.classList.remove('hidden');
+                connectedDiv.classList.add('flex');
+                addressSpan.textContent = currentWallet.publicKey.slice(0, 8) + '...' + currentWallet.publicKey.slice(-8);
+            } else {
+                connectBtn.classList.remove('hidden');
+                connectedDiv.classList.add('hidden');
+                connectedDiv.classList.remove('flex');
+            }
+        }
+
+        // 加载游戏数据
+        async function loadGameData() {
+            try {
+                // 获取土地数据
+                const { data, error } = await supabaseClient
+                    .from('lands')
+                    .select('*')
+                    .order('id');
+
+                if (error) throw error;
+
+                lands = data || [];
+                
+                // 如果没有数据，初始化64块土地
+                if (lands.length === 0) {
+                    await initializeLands();
+                    return loadGameData();
+                }
+
+                // 更新统计信息
+                updateStats();
+                
+                // 渲染土地网格
+                renderLandGrid();
+                
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                showNotification('加载数据失败: ' + error.message, 'error');
+            }
+        }
+
+        // 初始化土地数据
+        async function initializeLands() {
+            const initialLands = [];
+            for (let i = 0; i < 64; i++) {
+                initialLands.push({
+                    id: i,
+                    owner: null,
+                    image_url: null,
+                    for_sale: false,
+                    price: CONFIG.game.basePrice
+                });
+            }
+
+            const { error } = await supabaseClient
+                .from('lands')
+                .insert(initialLands);
+
+            if (error) throw error;
+        }
+
+        // 更新统计信息
+        function updateStats() {
+            const soldCount = lands.filter(land => land.owner).length;
+            const myLands = currentWallet ? lands.filter(land => land.owner === currentWallet.publicKey) : [];
+            
+            // 计算当前基础价格
+            const currentBasePrice = CONFIG.game.basePrice * Math.pow(
+                CONFIG.game.priceMultiplier, 
+                Math.floor(soldCount / CONFIG.game.priceIncreaseThreshold)
+            );
+
+            // 计算我的土地总价值
+            const totalValue = myLands.reduce((sum, land) => {
+                return sum + (land.for_sale ? land.price : currentBasePrice);
+            }, 0);
+
+            document.getElementById('base-price').textContent = currentBasePrice.toFixed(3);
+            document.getElementById('sold-count').textContent = soldCount;
+            document.getElementById('my-land-count').textContent = myLands.length;
+            document.getElementById('total-value').textContent = totalValue.toFixed(3);
+        }
+
+        // 渲染土地网格
+        function renderLandGrid() {
+            const grid = document.getElementById('land-grid');
+            grid.innerHTML = '';
+
+            for (let i = 0; i < 64; i++) {
+                const land = lands.find(l => l.id === i) || { id: i, owner: null, for_sale: false };
+                const cell = createLandCell(land);
+                grid.appendChild(cell);
+            }
+        }
+
+        // 创建土地单元格
+        function createLandCell(land) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-land flex items-center justify-center text-xs font-medium';
+            cell.dataset.landId = land.id;
+
+            // 设置样式和状态
+            if (!land.owner) {
+                cell.classList.add('available');
+                cell.innerHTML = `<div class="text-center"><i class="fas fa-plus mb-1"></i><br>可购买</div>`;
+            } else if (currentWallet && land.owner === currentWallet.publicKey) {
+                cell.classList.add('my-land');
+                cell.innerHTML = `<div class="text-center"><i class="fas fa-crown mb-1"></i><br>我的</div>`;
+            } else if (land.for_sale) {
+                cell.classList.add('for-sale');
+                cell.innerHTML = `<div class="text-center"><i class="fas fa-shopping-cart mb-1"></i><br>${land.price.toFixed(2)} SOL</div>`;
+            } else {
+                cell.classList.add('owned');
+                cell.innerHTML = `<div class="text-center"><i class="fas fa-lock mb-1"></i><br>已拥有</div>`;
+            }
+
+            // 如果有图片，显示图片
+            if (land.image_url) {
+                cell.style.backgroundImage = `url(${land.image_url})`;
+                cell.style.backgroundSize = 'cover';
+                cell.style.backgroundPosition = 'center';
+                cell.innerHTML = `<div class="bg-black bg-opacity-50 text-white p-1 rounded text-xs">#${land.id}</div>`;
+            }
+
+            cell.onclick = () => openLandModal(land.id);
+            return cell;
+        }
+
+        // 打开土地详情模态框
+        function openLandModal(landId) {
+            currentLandId = landId;
+            const land = lands.find(l => l.id === landId) || { id: landId, owner: null };
+            
+            document.getElementById('modal-title').textContent = `土地 #${landId}`;
+            
+            let content = `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="w-32 h-32 mx-auto border rounded-lg bg-gray-100 flex items-center justify-center mb-4">
+                            ${land.image_url ? 
+                                `<img src="${land.image_url}" alt="土地图片" class="w-full h-full object-cover rounded">` :
+                                `<i class="fas fa-image text-gray-400 text-2xl"></i>`
+                            }
+                        </div>
+                        <h4 class="font-bold">土地 #${landId}</h4>
+                        <p class="text-sm text-gray-600">所有者: ${land.owner ? (currentWallet && land.owner === currentWallet.publicKey ? '你' : land.owner.slice(0,8) + '...') : '开发者'}</p>
+                    </div>
+            `;
+
+            if (!land.owner) {
+                // 可从开发者购买
+                const currentBasePrice = CONFIG.game.basePrice * Math.pow(
+                    CONFIG.game.priceMultiplier, 
+                    Math.floor(lands.filter(l => l.owner).length / CONFIG.game.priceIncreaseThreshold)
+                );
+                content += `
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <p class="text-sm text-yellow-800 mb-2">可从开发者购买</p>
+                        <p class="text-lg font-bold text-yellow-900">${currentBasePrice.toFixed(3)} SOL</p>
+                        <button onclick="buyFromDeveloper(${landId}, ${currentBasePrice})" class="w-full mt-2 bg-yellow-600 text-white py-2 rounded hover:bg-yellow-700">
+                            购买土地
+                        </button>
+                    </div>
+                `;
+            } else if (currentWallet && land.owner === currentWallet.publicKey) {
+                // 我的土地
+                content += `
+                    <div class="bg-purple-50 p-4 rounded-lg">
+                        <p class="text-sm text-purple-800 mb-2">你拥有这块土地</p>
+                        <div class="space-y-2">
+                            <input type="file" id="image-upload" accept="image/*" class="w-full text-sm border rounded p-2">
+                            <button onclick="uploadImage()" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
+                                上传图片
+                            </button>
+                            <div class="flex space-x-2">
+                                <input type="number" id="sell-price" placeholder="出售价格 (SOL)" class="flex-1 border rounded p-2" step="0.001">
+                                <button onclick="listForSale()" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                                    上架
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (land.for_sale) {
+                // 在售土地
+                content += `
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-sm text-blue-800 mb-2">正在出售</p>
+                        <p class="text-lg font-bold text-blue-900">${land.price.toFixed(3)} SOL</p>
+                        <button onclick="buyFromUser(${landId}, ${land.price})" class="w-full mt-2 bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                            购买土地
+                        </button>
+                    </div>
+                `;
+            } else {
+                // 其他用户拥有且未出售
+                content += `
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <p class="text-sm text-gray-600">此土地暂不出售</p>
+                    </div>
+                `;
+            }
+
+            content += '</div>';
+            document.getElementById('modal-content').innerHTML = content;
+            showModal('land-modal');
+        }
+
+        // 从开发者购买土地
+        async function buyFromDeveloper(landId, price) {
+            if (!currentWallet) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+
+            try {
+                showTransactionModal(`购买土地 #${landId}`, price, CONFIG.game.developerWallet);
+                
+                // 模拟交易确认
+                setTimeout(async () => {
+                    try {
+                        const { error } = await supabaseClient
+                            .from('lands')
+                            .update({ 
+                                owner: currentWallet.publicKey,
+                                for_sale: false 
+                            })
+                            .eq('id', landId);
+
+                        if (error) throw error;
+
+                        hideModal('transaction-modal');
+                        hideModal('land-modal');
+                        await loadGameData();
+                        showNotification('购买成功！', 'success');
+                    } catch (error) {
+                        hideModal('transaction-modal');
+                        showNotification('购买失败: ' + error.message, 'error');
+                    }
+                }, 2000);
+            } catch (error) {
+                showNotification('购买失败: ' + error.message, 'error');
+            }
+        }
+
+        // 从用户购买土地
+        async function buyFromUser(landId, price) {
+            if (!currentWallet) {
+                showNotification('请先连接钱包', 'error');
+                return;
+            }
+
+            const land = lands.find(l => l.id === landId);
+            if (!land) return;
+
+            try {
+                showTransactionModal(`购买土地 #${landId}`, price, land.owner);
+                
+                setTimeout(async () => {
+                    try {
+                        const { error } = await supabaseClient
+                            .from('lands')
+                            .update({ 
+                                owner: currentWallet.publicKey,
+                                for_sale: false 
+                            })
+                            .eq('id', landId);
+
+                        if (error) throw error;
+
+                        hideModal('transaction-modal');
+                        hideModal('land-modal');
+                        await loadGameData();
+                        showNotification('购买成功！', 'success');
+                    } catch (error) {
+                        hideModal('transaction-modal');
+                        showNotification('购买失败: ' + error.message, 'error');
+                    }
+                }, 2000);
+            } catch (error) {
+                showNotification('购买失败: ' + error.message, 'error');
+            }
+        }
+
+        // 上传图片
+        async function uploadImage() {
+            const fileInput = document.getElementById('image-upload');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showNotification('请选择图片文件', 'error');
+                return;
+            }
+
+            try {
+                const fileName = `land_${currentLandId}_${Date.now()}.${file.name.split('.').pop()}`;
+                
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('land-images')
+                    .upload(fileName, file);
+
+                if (uploadError) throw uploadError;
+
+                const { data } = supabaseClient.storage
+                    .from('land-images')
+                    .getPublicUrl(fileName);
+
+                const { error: updateError } = await supabaseClient
+                    .from('lands')
+                    .update({ image_url: data.publicUrl })
+                    .eq('id', currentLandId);
+
+                if (updateError) throw updateError;
+
+                await loadGameData();
+                openLandModal(currentLandId);
+                showNotification('图片上传成功！', 'success');
+            } catch (error) {
+                showNotification('图片上传失败: ' + error.message, 'error');
+            }
+        }
+
+        // 上架出售
+        async function listForSale() {
+            const priceInput = document.getElementById('sell-price');
+            const price = parseFloat(priceInput.value);
+            
+            if (!price || price <= 0) {
+                showNotification('请输入有效价格', 'error');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('lands')
+                    .update({ 
+                        for_sale: true,
+                        price: price 
+                    })
+                    .eq('id', currentLandId);
+
+                if (error) throw error;
+
+                hideModal('land-modal');
+                await loadGameData();
+                showNotification('上架成功！', 'success');
+            } catch (error) {
+                showNotification('上架失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示交易模态框
+        function showTransactionModal(title, amount, recipient) {
+            const content = `
+                <div class="space-y-4">
+                    <h4 class="font-bold">${title}</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                        <div class="flex justify-between">
+                            <span>金额:</span>
+                            <span class="font-bold">${amount.toFixed(3)} SOL</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>接收方:</span>
+                            <span class="font-mono text-xs">${recipient.slice(0,8)}...${recipient.slice(-8)}</span>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-2"></div>
+                        <p class="text-sm text-gray-600">正在处理交易...</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('tx-content').innerHTML = content;
+            showModal('transaction-modal');
+        }
+
+        // 显示/隐藏模态框
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function hideModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.innerHTML = `<i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : type === 'warning' ? 'exclamation' : 'info'}-circle mr-2"></i>${message}`;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html> 
