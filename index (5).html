@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>土地游戏 | 数字土地所有权</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.0/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.31.0/dist/umd/supabase.min.js"></script>
+  <script src="./supabase-config.js"></script>
+  
+  <style>
+    :root {
+      --primary: #165DFF;
+      --secondary: #722ED1;
+      --accent: #FF7D00;
+      --dark: #1D2129;
+      --light: #F2F3F5;
+    }
+    
+    .text-primary { color: var(--primary); }
+    .text-secondary { color: var(--secondary); }
+    .text-accent { color: var(--accent); }
+    .text-dark { color: var(--dark); }
+    
+    .bg-primary { background-color: var(--primary); }
+    .bg-secondary { background-color: var(--secondary); }
+    .bg-accent { background-color: var(--accent); }
+    .bg-dark { background-color: var(--dark); }
+    .bg-light { background-color: var(--light); }
+    
+    .border-primary { border-color: var(--primary); }
+    .border-secondary { border-color: var(--secondary); }
+    
+    .hover\:bg-primary\/90:hover { background-color: rgba(22, 93, 255, 0.9); }
+    .hover\:bg-secondary\/90:hover { background-color: rgba(114, 46, 209, 0.9); }
+    .hover\:bg-accent\/90:hover { background-color: rgba(255, 125, 0, 0.9); }
+    
+    .bg-primary\/10 { background-color: rgba(22, 93, 255, 0.1); }
+    .bg-secondary\/5 { background-color: rgba(114, 46, 209, 0.05); }
+    .bg-primary\/5 { background-color: rgba(22, 93, 255, 0.05); }
+    .border-primary\/30 { border-color: rgba(22, 93, 255, 0.3); }
+    
+    .font-inter { font-family: 'Inter', sans-serif; }
+    
+    .grid-item-hover {
+      transition: all 0.3s ease;
+    }
+    .grid-item-hover:hover {
+      transform: scale(1.02);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      background-color: rgba(22, 93, 255, 0.9);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    .btn-primary:active {
+      transform: scale(0.95);
+    }
+    
+    .btn-secondary {
+      background-color: var(--secondary);
+      color: white;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-secondary:hover {
+      background-color: rgba(114, 46, 209, 0.9);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .btn-accent {
+      background-color: var(--accent);
+      color: white;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-accent:hover {
+      background-color: rgba(255, 125, 0, 0.9);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 0.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      padding: 1rem;
+      transition: all 0.3s ease;
+    }
+  </style>
+</head>
+<body class="font-inter bg-light min-h-screen flex flex-col">
+  <!-- 顶部导航栏 -->
+  <header class="bg-white shadow-sm sticky top-0 z-50">
+    <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
+          <i class="fa fa-cubes text-white text-xl"></i>
+        </div>
+        <h1 class="text-xl font-bold text-dark">土地游戏</h1>
+      </div>
+      
+      <div class="flex items-center space-x-4">
+        <nav class="hidden md:flex items-center space-x-6">
+          <a href="#" class="text-dark hover:text-primary transition-colors">首页</a>
+          <a href="#" class="text-dark hover:text-primary transition-colors">市场</a>
+          <a href="#" class="text-dark hover:text-primary transition-colors">排行榜</a>
+          <a href="#" class="text-dark hover:text-primary transition-colors">帮助</a>
+        </nav>
+        
+        <div id="wallet-section" class="flex items-center space-x-3">
+          <button id="connect-wallet" class="btn-primary">
+            <i class="fa fa-wallet mr-2"></i>连接钱包
+          </button>
+          <div id="wallet-info" class="hidden items-center space-x-2">
+            <div id="wallet-address" class="text-sm font-medium bg-light px-3 py-1 rounded-full truncate max-w-[120px]"></div>
+            <button id="disconnect-wallet" class="text-dark hover:text-red-500 transition-colors">
+              <i class="fa fa-times-circle"></i>
+            </button>
+          </div>
+        </div>
+        
+        <button class="md:hidden text-dark text-xl" id="mobile-menu-button">
+          <i class="fa fa-bars"></i>
+        </button>
+      </div>
+    </div>
+    
+    <!-- 移动端菜单 -->
+    <div id="mobile-menu" class="hidden md:hidden bg-white shadow-md">
+      <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+        <a href="#" class="text-dark hover:text-primary py-2 transition-colors">首页</a>
+        <a href="#" class="text-dark hover:text-primary py-2 transition-colors">市场</a>
+        <a href="#" class="text-dark hover:text-primary py-2 transition-colors">排行榜</a>
+        <a href="#" class="text-dark hover:text-primary py-2 transition-colors">帮助</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主内容区 -->
+  <main class="flex-grow container mx-auto px-4 py-8">
+    <!-- 统计信息卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div class="card">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-dark font-medium">当前基础价格</h3>
+          <i class="fa fa-tag text-primary"></i>
+        </div>
+        <div class="flex items-baseline">
+          <span id="base-price" class="text-2xl font-bold text-dark">0.05</span>
+          <span class="ml-1 text-dark/70">SOL</span>
+        </div>
+        <div class="mt-2 text-sm text-gray-500">
+          每购买8块土地，价格上涨100%
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-dark font-medium">已售出土地</h3>
+          <i class="fa fa-map-marker text-secondary"></i>
+        </div>
+        <div class="flex items-baseline">
+          <span id="sold-count" class="text-2xl font-bold text-dark">0</span>
+          <span class="ml-1 text-dark/70">/ <span id="total-lands">64</span></span>
+        </div>
+        <div class="mt-2 text-sm text-gray-500">
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div id="sales-progress" class="bg-secondary h-2 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-dark font-medium">你的土地</h3>
+          <i class="fa fa-user-circle text-accent"></i>
+        </div>
+        <div class="flex items-baseline">
+          <span id="user-land-count" class="text-2xl font-bold text-dark">0</span>
+          <span class="ml-1 text-dark/70">块</span>
+        </div>
+        <div id="your-land-value" class="mt-2 text-sm text-gray-500 hidden">
+          总价值: <span class="font-medium">0</span> SOL
+        </div>
+      </div>
+    </div>
+    
+    <!-- 土地网格 -->
+    <div class="card mb-8">
+      <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-dark mb-4 md:mb-0">土地地图</h2>
+        <div class="flex space-x-3">
+          <button id="refresh-grid" class="btn-primary">
+            <i class="fa fa-refresh mr-2"></i>刷新地图
+          </button>
+          <button id="view-market" class="btn-secondary">
+            <i class="fa fa-shopping-bag mr-2"></i>查看市场
+          </button>
+        </div>
+      </div>
+      
+      <div class="grid gap-3" id="land-grid" style="grid-template-columns: repeat(8, minmax(0, 1fr));">
+        <!-- 土地网格将通过JavaScript动态生成 -->
+      </div>
+    </div>
+    
+    <!-- 土地详情模态框 -->
+    <div id="land-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="card max-w-md w-full mx-4 transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-dark" id="modal-title">土地详情</h3>
+          <button id="close-modal" class="text-gray-500 hover:text-dark transition-colors">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        
+        <div id="modal-loading" class="flex items-center justify-center py-8">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+        
+        <div id="modal-content-body" class="hidden">
+          <div class="mb-4">
+            <div class="aspect-square bg-light rounded-lg mb-3 overflow-hidden" id="land-image-container">
+              <img id="land-image" src="https://picsum.photos/400/400" alt="土地图片" class="w-full h-full object-cover">
+            </div>
+            <div class="flex justify-between items-center">
+              <div>
+                <span class="text-sm text-gray-500">土地编号</span>
+                <h4 id="land-id" class="font-medium text-dark">L-001</h4>
+              </div>
+              <div>
+                <span class="text-sm text-gray-500">当前所有者</span>
+                <div id="land-owner" class="font-medium text-dark truncate max-w-[150px]"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="land-status-owned" class="hidden mb-4">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+              <div class="flex items-center">
+                <i class="fa fa-check-circle text-green-500 mr-2"></i>
+                <span class="font-medium text-green-700">你拥有这块土地</span>
+              </div>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">上传土地图片</label>
+              <input type="file" id="image-upload" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer">
+              <button id="save-image" class="btn-primary mt-2 hidden">保存图片</button>
+            </div>
+            
+            <div class="mb-4">
+              <label class="block text-sm font-medium text-gray-700 mb-1">上架出售</label>
+              <div class="flex items-center">
+                <input type="number" id="sell-price" placeholder="输入出售价格 (SOL)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-dark">
+                <button id="list-for-sale" class="btn-accent ml-2">上架</button>
+              </div>
+            </div>
+          </div>
+          
+          <div id="land-status-not-owned" class="hidden mb-4">
+            <div id="land-for-sale" class="hidden mb-4">
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-sm text-gray-500">当前售价</span>
+                    <div class="flex items-baseline">
+                      <span id="land-price" class="text-xl font-bold text-blue-700">0.05</span>
+                      <span class="ml-1 text-blue-700">SOL</span>
+                    </div>
+                  </div>
+                  <button id="buy-land" class="btn-accent">购买</button>
+                </div>
+              </div>
+            </div>
+            
+            <div id="land-not-for-sale" class="hidden mb-4">
+              <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center">
+                  <i class="fa fa-lock text-gray-500 mr-2"></i>
+                  <span class="text-gray-700">这块土地未上架出售</span>
+                </div>
+              </div>
+            </div>
+            
+            <div id="land-available" class="hidden mb-4">
+              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="text-sm text-gray-500">基础价格</span>
+                    <div class="flex items-baseline">
+                      <span id="land-base-price" class="text-xl font-bold text-yellow-700">0.05</span>
+                      <span class="ml-1 text-yellow-700">SOL</span>
+                    </div>
+                  </div>
+                  <button id="buy-from-dev" class="btn-accent">从开发者购买</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 交易模态框 -->
+    <div id="transaction-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="card max-w-md w-full mx-4">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-dark">确认交易</h3>
+          <button id="close-tx-modal" class="text-gray-500 hover:text-dark transition-colors">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        
+        <div id="tx-details" class="mb-4">
+          <div class="bg-light rounded-lg p-4 mb-4">
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-500">交易类型</span>
+              <span id="tx-type" class="font-medium text-dark">购买土地</span>
+            </div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-500">金额</span>
+              <span id="tx-amount" class="font-medium text-dark">0.05 SOL</span>
+            </div>
+            <div class="flex justify-between mb-2">
+              <span class="text-sm text-gray-500">接收方</span>
+              <div id="tx-recipient" class="font-medium text-dark truncate max-w-[200px]">7jxcMBPumwn6Th9jo66px9bdgReKZJ9wGh3xJKdJDr3v</div>
+            </div>
+          </div>
+          
+          <div class="text-sm text-red-500 mb-4">
+            <i class="fa fa-exclamation-triangle mr-1"></i> 请在外部钱包中确认交易
+          </div>
+        </div>
+        
+        <div class="flex justify-end space-x-3">
+          <button id="cancel-tx" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">取消</button>
+          <button id="confirm-tx" class="btn-primary">确认</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 交易结果模态框 -->
+    <div id="tx-result-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+      <div class="card max-w-md w-full mx-4">
+        <div class="text-center mb-4">
+          <div id="tx-success-icon" class="hidden mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+            <i class="fa fa-check text-green-500 text-2xl"></i>
+          </div>
+          <div id="tx-fail-icon" class="hidden mx-auto w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <i class="fa fa-times text-red-500 text-2xl"></i>
+          </div>
+          <h3 class="text-xl font-bold text-dark" id="tx-result-title">交易成功</h3>
+          <p class="text-gray-500 mt-2" id="tx-result-message">土地已成功购买</p>
+        </div>
+        
+        <div class="flex justify-end">
+          <button id="close-result-modal" class="btn-primary">确定</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- 页脚 -->
+  <footer class="bg-dark text-white py-8">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <div class="flex items-center space-x-2 mb-4">
+            <div class="w-10 h-10 rounded-lg bg-white flex items-center justify-center">
+              <i class="fa fa-cubes text-primary text-xl"></i>
+            </div>
+            <h2 class="text-xl font-bold">土地游戏</h2>
+          </div>
+          <p class="text-gray-400 text-sm">数字土地所有权的未来</p>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-medium mb-4">快速链接</h3>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition-colors">首页</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">市场</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">排行榜</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">帮助中心</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-medium mb-4">资源</h3>
+          <ul class="space-y-2 text-gray-400">
+            <li><a href="#" class="hover:text-white transition-colors">白皮书</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">API文档</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">开发者社区</a></li>
+            <li><a href="#" class="hover:text-white transition-colors">常见问题</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="text-lg font-medium mb-4">联系我们</h3>
+          <ul class="space-y-2 text-gray-400">
+            <li class="flex items-center">
+              <i class="fa fa-envelope mr-2"></i>
+              <a href="mailto:support@landgame.com" class="hover:text-white transition-colors">support@landgame.com</a>
+            </li>
+            <li class="flex items-center">
+              <i class="fa fa-twitter mr-2"></i>
+              <a href="#" class="hover:text-white transition-colors">@landgame_official</a>
+            </li>
+            <li class="flex items-center">
+              <i class="fa fa-discord mr-2"></i>
+              <a href="#" class="hover:text-white transition-colors">加入Discord</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400 text-sm">
+        <p>&copy; 2025 土地游戏. 保留所有权利.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // 全局变量 - 使用配置文件中的值
+    const SUPABASE_URL = window.SUPABASE_CONFIG?.url || 'https://your-project-id.supabase.co';
+    const SUPABASE_ANON_KEY = window.SUPABASE_CONFIG?.anonKey || 'your-anon-key-here';
+    const DEVELOPER_WALLET = window.SUPABASE_CONFIG?.developerWallet || '7jxcMBPumwn6Th9jo66px9bdgReKZJ9wGh3xJKdJDr3v';
+    const GAME_CONFIG = window.SUPABASE_CONFIG?.gameConfig || {
+      gridSize: 8,
+      basePrice: 0.05,
+      priceIncreaseThreshold: 8,
+      priceMultiplier: 2
+    };
+    
+    // 检查配置是否正确设置
+    if (SUPABASE_URL.includes('your-project-id') || SUPABASE_ANON_KEY.includes('your-anon-key')) {
+      console.error('请在supabase-config.js中设置正确的Supabase配置！');
+      alert('请在supabase-config.js中设置正确的Supabase配置！');
+    }
+    
+    // 初始化Supabase客户端
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    
+    // DOM元素
+    const landGrid = document.getElementById('land-grid');
+    const landModal = document.getElementById('land-modal');
+    const modalContent = document.getElementById('modal-content');
+    const modalTitle = document.getElementById('modal-title');
+    const modalLoading = document.getElementById('modal-loading');
+    const modalContentBody = document.getElementById('modal-content-body');
+    const closeModal = document.getElementById('close-modal');
+    const connectWalletBtn = document.getElementById('connect-wallet');
+    const disconnectWalletBtn = document.getElementById('disconnect-wallet');
+    const walletInfo = document.getElementById('wallet-info');
+    const walletAddress = document.getElementById('wallet-address');
+    const refreshGridBtn = document.getElementById('refresh-grid');
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    const basePriceEl = document.getElementById('base-price');
+    const soldCountEl = document.getElementById('sold-count');
+    const salesProgressEl = document.getElementById('sales-progress');
+    const userLandCountEl = document.getElementById('user-land-count');
+    const yourLandValueEl = document.getElementById('your-land-value');
+    const transactionModal = document.getElementById('transaction-modal');
+    const closeTxModal = document.getElementById('close-tx-modal');
+    const txTypeEl = document.getElementById('tx-type');
+    const txAmountEl = document.getElementById('tx-amount');
+    const txRecipientEl = document.getElementById('tx-recipient');
+    const confirmTxBtn = document.getElementById('confirm-tx');
+    const cancelTxBtn = document.getElementById('cancel-tx');
+    const txResultModal = document.getElementById('tx-result-modal');
+    const txResultTitle = document.getElementById('tx-result-title');
+    const txResultMessage = document.getElementById('tx-result-message');
+    const txSuccessIcon = document.getElementById('tx-success-icon');
+    const txFailIcon = document.getElementById('tx-fail-icon');
+    const closeResultModal = document.getElementById('close-result-modal');
+    
+    // 状态变量
+    let currentWallet = null;
+    let currentLandId = null;
+    let currentLandData = null;
+    let basePrice = GAME_CONFIG.basePrice; // 使用配置中的初始基础价格
+    
+    // 页面加载时初始化
+    document.addEventListener('DOMContentLoaded', async () => {
+      await initApp();
+      
+      // 事件监听器
+      connectWalletBtn.addEventListener('click', connectWallet);
+      disconnectWalletBtn.addEventListener('click', disconnectWallet);
+      refreshGridBtn.addEventListener('click', loadLandGrid);
+      closeModal.addEventListener('click', closeLandModal);
+      mobileMenuButton.addEventListener('click', toggleMobileMenu);
+      closeTxModal.addEventListener('click', closeTransactionModal);
+      confirmTxBtn.onclick = confirmTransaction;
+      cancelTxBtn.onclick = closeTransactionModal;
+      closeResultModal.onclick = closeResultModalHandler;
+      
+      // 点击模态框外部关闭
+      landModal.addEventListener('click', (e) => {
+        if (e.target === landModal) closeLandModal();
+      });
+      
+      transactionModal.addEventListener('click', (e) => {
+        if (e.target === transactionModal) closeTransactionModal();
+      });
+      
+      txResultModal.addEventListener('click', (e) => {
+        if (e.target === txResultModal) closeResultModalHandler();
+      });
+    });
+    
+    // 初始化应用
+    async function initApp() {
+      // 检查配置
+      if (SUPABASE_URL.includes('your-project-id') || SUPABASE_ANON_KEY.includes('your-anon-key')) {
+        console.error('请在supabase-config.js中设置正确的Supabase配置！');
+        document.body.innerHTML = `
+          <div class="min-h-screen flex items-center justify-center bg-red-50">
+            <div class="text-center p-8 bg-white rounded-lg shadow-lg max-w-md">
+              <i class="fa fa-exclamation-triangle text-red-500 text-4xl mb-4"></i>
+              <h2 class="text-xl font-bold text-red-600 mb-2">配置错误</h2>
+              <p class="text-gray-600 mb-4">请在 supabase-config.js 中设置正确的 Supabase 配置</p>
+              <a href="README.md" class="inline-block bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600">查看设置说明</a>
+            </div>
+          </div>
+        `;
+        return;
+      }
+      
+      // 设置网格样式
+      const gridSize = GAME_CONFIG.gridSize;
+      landGrid.style.gridTemplateColumns = `repeat(${gridSize}, minmax(0, 1fr))`;
+      
+      // 检查是否已连接钱包
+      const storedWallet = localStorage.getItem('connectedWallet');
+      if (storedWallet) {
+        try {
+          currentWallet = JSON.parse(storedWallet);
+          // 验证钱包是否仍然连接
+          if (window.solana && window.solana.isConnected) {
+            updateWalletUI();
+          } else {
+            // 钱包已断开，清除本地存储
+            localStorage.removeItem('connectedWallet');
+            currentWallet = null;
+          }
+        } catch (e) {
+          console.error('解析存储的钱包信息失败:', e);
+          localStorage.removeItem('connectedWallet');
+        }
+      }
+      
+      // 加载土地网格数据
+      await loadLandGrid();
+    }
+    
+    // 连接钱包
+    async function connectWallet() {
+      try {
+        // 检查浏览器是否安装了钱包扩展
+        if (!window.solana) {
+          showNotification('请安装Solana钱包扩展（如Phantom）', 'error');
+          window.open('https://phantom.app/', '_blank');
+          return;
+        }
+        
+        // 检查钱包是否已连接
+        if (window.solana.isConnected) {
+          currentWallet = {
+            publicKey: window.solana.publicKey.toString()
+          };
+        } else {
+          // 请求连接钱包
+          const wallet = await window.solana.connect();
+          currentWallet = {
+            publicKey: wallet.publicKey.toString()
+          };
+        }
+        
+        // 保存到本地存储
+        localStorage.setItem('connectedWallet', JSON.stringify(currentWallet));
+        
+        // 更新UI
+        updateWalletUI();
+        
+        // 刷新土地网格
+        await loadLandGrid();
+        
+        showNotification('钱包已连接', 'success');
+      } catch (error) {
+        console.error('连接钱包失败:', error);
+        if (error.message.includes('User rejected')) {
+          showNotification('用户取消了钱包连接', 'info');
+        } else {
+          showNotification('连接钱包失败，请重试', 'error');
+        }
+      }
+    }
+    
+    // 断开钱包连接
+    function disconnectWallet() {
+      currentWallet = null;
+      localStorage.removeItem('connectedWallet');
+      updateWalletUI();
+      showNotification('钱包已断开连接', 'info');
+    }
+    
+    // 更新钱包UI
+    function updateWalletUI() {
+      if (currentWallet) {
+        walletAddress.textContent = currentWallet.publicKey;
+        walletInfo.classList.remove('hidden');
+        walletInfo.classList.add('flex');
+        connectWalletBtn.classList.add('hidden');
+      } else {
+        walletInfo.classList.add('hidden');
+        walletInfo.classList.remove('flex');
+        connectWalletBtn.classList.remove('hidden');
+      }
+    }
+    
+    // 切换移动菜单
+    function toggleMobileMenu() {
+      mobileMenu.classList.toggle('hidden');
+    }
+    
+    // 加载土地网格
+    async function loadLandGrid() {
+      try {
+        // 显示加载状态
+        landGrid.innerHTML = '';
+        const loadingEl = document.createElement('div');
+        loadingEl.className = 'col-span-8 flex justify-center py-16';
+        loadingEl.innerHTML = '<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>';
+        landGrid.appendChild(loadingEl);
+        
+        // 从Supabase获取土地数据
+        const { data: lands, error } = await supabaseClient
+          .from('lands')
+          .select('*')
+          .order('id', { ascending: true });
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        // 计算基础价格 - 每8块土地售出后价格翻倍
+        const soldCount = lands.filter(land => land.owner !== null).length;
+        basePrice = GAME_CONFIG.basePrice * Math.pow(GAME_CONFIG.priceMultiplier, Math.floor(soldCount / GAME_CONFIG.priceIncreaseThreshold));
+        basePriceEl.textContent = basePrice.toFixed(3);
+        
+        // 更新销售统计
+        soldCountEl.textContent = soldCount;
+        const totalLands = GAME_CONFIG.gridSize * GAME_CONFIG.gridSize;
+        document.getElementById('total-lands').textContent = totalLands;
+        salesProgressEl.style.width = `${(soldCount / totalLands) * 100}%`;
+        
+        // 计算用户拥有的土地数量
+        let userLandCount = 0;
+        let userLandValue = 0;
+        
+        if (currentWallet) {
+          userLandCount = lands.filter(land => land.owner === currentWallet.publicKey).length;
+          
+          // 计算用户土地总价值
+          const userLands = lands.filter(land => land.owner === currentWallet.publicKey);
+          userLandValue = userLands.reduce((total, land) => {
+            return total + (land.for_sale ? land.price : basePrice);
+          }, 0);
+        }
+        
+        userLandCountEl.textContent = userLandCount;
+        
+        if (userLandCount > 0) {
+          yourLandValueEl.classList.remove('hidden');
+          yourLandValueEl.querySelector('span').textContent = userLandValue.toFixed(2);
+        } else {
+          yourLandValueEl.classList.add('hidden');
+        }
+        
+        // 渲染土地网格
+        landGrid.innerHTML = '';
+        
+        for (let i = 0; i < totalLands; i++) {
+          const land = lands.find(l => l.id === i) || {
+            id: i,
+            owner: null,
+            image_url: null,
+            for_sale: false,
+            price: basePrice
+          };
+          
+          const landCard = createLandCard(land);
+          landGrid.appendChild(landCard);
+        }
+      } catch (error) {
+        console.error('加载土地网格失败:', error);
+        landGrid.innerHTML = `
+          <div class="col-span-8 flex justify-center py-8 text-red-500">
+            <i class="fa fa-exclamation-triangle mr-2"></i>加载土地数据失败，请刷新页面重试
+          </div>
+        `;
+      }
+    }
+    
+    // 创建土地卡片
+    function createLandCard(land) {
+      const card = document.createElement('div');
+      card.className = 'relative grid-item-hover rounded-lg overflow-hidden border border-gray-200 aspect-square';
+      card.dataset.landId = land.id;
+      
+      // 设置背景颜色
+      if (land.owner === null) {
+        card.classList.add('bg-light');
+      } else if (currentWallet && land.owner === currentWallet.publicKey) {
+        card.classList.add('bg-primary/10', 'border-primary/30');
+      } else {
+        card.classList.add('bg-gray-100');
+      }
+      
+      // 土地图片
+      const imageContainer = document.createElement('div');
+      imageContainer.className = 'w-full h-full relative';
+      
+      if (land.image_url) {
+        const image = document.createElement('img');
+        image.src = land.image_url;
+        image.alt = `土地 #${land.id}`;
+        image.className = 'w-full h-full object-cover';
+        imageContainer.appendChild(image);
+      } else {
+        const placeholder = document.createElement('div');
+        placeholder.className = 'w-full h-full flex items-center justify-center bg-gray-200';
+        placeholder.innerHTML = `
+          <div class="text-center">
+            <i class="fa fa-map-o text-gray-400 text-2xl mb-1"></i>
+            <p class="text-xs text-gray-500">土地 #${land.id}</p>
+          </div>
+        `;
+        imageContainer.appendChild(placeholder);
+      }
+      
+      // 状态覆盖层
+      const overlay = document.createElement('div');
+      overlay.className = 'absolute inset-0 flex flex-col justify-between p-2 opacity-0 hover:opacity-100 transition-opacity duration-300';
+      
+      if (land.owner === null) {
+        overlay.className = 'absolute inset-0 flex items-center justify-center p-2 bg-yellow-500/80 text-white font-medium';
+        overlay.textContent = '可购买';
+      } else if (land.for_sale) {
+        overlay.className = 'absolute inset-0 flex items-center justify-center p-2 bg-blue-500/80 text-white font-medium';
+        overlay.textContent = `售价: ${land.price} SOL`;
+      } else if (currentWallet && land.owner === currentWallet.publicKey) {
+        overlay.innerHTML = `
+          <div class="self-start bg-primary text-white text-xs px-2 py-1 rounded">我的土地</div>
+          <div class="self-end bg-gray-800/80 text-white text-xs px-2 py-1 rounded">点击管理</div>
+        `;
+      } else {
+        overlay.innerHTML = `
+          <div class="self-start bg-gray-800/80 text-white text-xs px-2 py-1 rounded truncate">已拥有</div>
+          <div class="self-end bg-gray-800/80 text-white text-xs px-2 py-1 rounded">点击查看</div>
+        `;
+      }
+      
+      imageContainer.appendChild(overlay);
+      card.appendChild(imageContainer);
+      
+      // 点击事件
+      card.addEventListener('click', () => {
+        openLandModal(land.id);
+      });
+      
+      return card;
+    }
+    
+    // 打开土地详情模态框
+    async function openLandModal(landId) {
+      try {
+        currentLandId = landId;
+        landModal.classList.remove('hidden');
+        
+        // 显示加载状态
+        modalLoading.classList.remove('hidden');
+        modalContentBody.classList.add('hidden');
+        modalTitle.textContent = `土地 #${landId}`;
+        
+        // 动画效果
+        setTimeout(() => {
+          modalContent.classList.remove('scale-95', 'opacity-0');
+          modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+        
+        // 从Supabase获取土地详情
+        const { data: land, error } = await supabaseClient
+          .from('lands')
+          .select('*')
+          .eq('id', landId)
+          .single();
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        currentLandData = land;
+        
+        // 更新模态框内容
+        document.getElementById('land-id').textContent = `L-${landId.toString().padStart(3, '0')}`;
+        document.getElementById('land-owner').textContent = land.owner || '开发者';
+        
+        // 设置土地图片
+        const landImage = document.getElementById('land-image');
+        if (land.image_url) {
+          landImage.src = land.image_url;
+          landImage.alt = `土地 #${landId}`;
+        } else {
+          landImage.src = 'https://picsum.photos/400/400';
+          landImage.alt = `土地 #${landId} (暂无图片)`;
+        }
+        
+        // 显示/隐藏相关UI元素
+        const landStatusOwned = document.getElementById('land-status-owned');
+        const landStatusNotOwned = document.getElementById('land-status-not-owned');
+        const landForSale = document.getElementById('land-for-sale');
+        const landNotForSale = document.getElementById('land-not-for-sale');
+        const landAvailable = document.getElementById('land-available');
+        
+        // 重置UI状态
+        landStatusOwned.classList.add('hidden');
+        landStatusNotOwned.classList.add('hidden');
+        landForSale.classList.add('hidden');
+        landNotForSale.classList.add('hidden');
+        landAvailable.classList.add('hidden');
+        
+        // 检查当前用户是否拥有此土地
+        if (currentWallet && land.owner === currentWallet.publicKey) {
+          landStatusOwned.classList.remove('hidden');
+          
+          // 设置图片上传事件
+          const imageUpload = document.getElementById('image-upload');
+          const saveImageBtn = document.getElementById('save-image');
+          
+          imageUpload.onchange = () => {
+            saveImageBtn.classList.remove('hidden');
+          };
+          
+          saveImageBtn.onclick = () => {
+            uploadLandImage(landId, imageUpload.files[0]);
+          };
+          
+          // 设置出售按钮事件
+          const sellPriceInput = document.getElementById('sell-price');
+          const listForSaleBtn = document.getElementById('list-for-sale');
+          
+          listForSaleBtn.onclick = () => {
+            const price = parseFloat(sellPriceInput.value);
+            if (isNaN(price) || price <= 0) {
+              showNotification('请输入有效的价格', 'error');
+              return;
+            }
+            
+            listLandForSale(landId, price);
+          };
+        } else {
+          landStatusNotOwned.classList.remove('hidden');
+          
+          // 土地是否可供出售
+          if (land.owner === null) {
+            // 土地未被购买，可从开发者购买
+            landAvailable.classList.remove('hidden');
+            document.getElementById('land-base-price').textContent = basePrice.toFixed(3);
+            
+            // 设置购买按钮事件
+            document.getElementById('buy-from-dev').onclick = () => {
+              openTransactionModal('购买土地', basePrice, DEVELOPER_WALLET, () => {
+                buyLandFromDeveloper(landId, basePrice);
+              });
+            };
+          } else if (land.for_sale) {
+            // 土地已被购买且正在出售
+            landForSale.classList.remove('hidden');
+            document.getElementById('land-price').textContent = land.price.toFixed(2);
+            
+            // 设置购买按钮事件
+            document.getElementById('buy-land').onclick = () => {
+              openTransactionModal('购买土地', land.price, land.owner, () => {
+                buyLandFromUser(landId, land.price, land.owner);
+              });
+            };
+          } else {
+            // 土地已被购买但未出售
+            landNotForSale.classList.remove('hidden');
+          }
+        }
+        
+        // 隐藏加载状态，显示内容
+        modalLoading.classList.add('hidden');
+        modalContentBody.classList.remove('hidden');
+      } catch (error) {
+        console.error('加载土地详情失败:', error);
+        modalLoading.classList.add('hidden');
+        modalContentBody.innerHTML = `
+          <div class="text-center py-8 text-red-500">
+            <i class="fa fa-exclamation-triangle mr-2"></i>加载土地详情失败，请重试
+          </div>
+        `;
+        modalContentBody.classList.remove('hidden');
+      }
+    }
+    
+    // 关闭土地详情模态框
+    function closeLandModal() {
+      modalContent.classList.remove('scale-100', 'opacity-100');
+      modalContent.classList.add('scale-95', 'opacity-0');
+      
+      setTimeout(() => {
+        landModal.classList.add('hidden');
+      }, 300);
+    }
+    
+    // 上传土地图片
+    async function uploadLandImage(landId, file) {
+      try {
+        if (!file) {
+          showNotification('请选择图片', 'error');
+          return;
+        }
+        
+        // 显示加载状态
+        const saveImageBtn = document.getElementById('save-image');
+        saveImageBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>上传中...';
+        saveImageBtn.disabled = true;
+        
+        // 生成唯一文件名
+        const fileName = `land_images/${landId}_${Date.now()}_${file.name}`;
+        
+        // 上传到Supabase存储
+        const { error: uploadError } = await supabaseClient.storage
+          .from('land-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (uploadError) {
+          throw new Error(uploadError.message);
+        }
+        
+        // 获取公开URL
+        const { data } = supabaseClient.storage
+          .from('land-images')
+          .getPublicUrl(fileName);
+        
+        const publicURL = data.publicUrl;
+        
+        if (!publicURL) {
+          throw new Error('无法获取图片URL');
+        }
+        
+        // 更新数据库中的图片URL
+        const { error: updateError } = await supabaseClient
+          .from('lands')
+          .update({ image_url: publicURL })
+          .eq('id', landId);
+        
+        if (updateError) {
+          throw new Error(updateError.message);
+        }
+        
+        // 更新UI
+        document.getElementById('land-image').src = publicURL;
+        showNotification('图片上传成功', 'success');
+        
+        // 重置上传按钮
+        saveImageBtn.innerHTML = '保存图片';
+        saveImageBtn.disabled = false;
+        saveImageBtn.classList.add('hidden');
+      } catch (error) {
+        console.error('上传图片失败:', error);
+        showNotification('图片上传失败', 'error');
+        
+        // 重置上传按钮
+        const saveImageBtn = document.getElementById('save-image');
+        saveImageBtn.innerHTML = '保存图片';
+        saveImageBtn.disabled = false;
+      }
+    }
+    
+    // 上架土地出售
+    async function listLandForSale(landId, price) {
+      try {
+        // 显示加载状态
+        const listForSaleBtn = document.getElementById('list-for-sale');
+        listForSaleBtn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>处理中...';
+        listForSaleBtn.disabled = true;
+        
+        // 更新数据库
+        const { error } = await supabaseClient
+          .from('lands')
+          .update({ 
+            for_sale: true,
+            price: price
+          })
+          .eq('id', landId);
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        // 更新UI
+        showNotification(`土地已上架出售，价格: ${price} SOL`, 'success');
+        closeLandModal();
+        await loadLandGrid();
+      } catch (error) {
+        console.error('上架土地失败:', error);
+        showNotification('上架土地失败', 'error');
+        
+        // 重置按钮
+        const listForSaleBtn = document.getElementById('list-for-sale');
+        listForSaleBtn.innerHTML = '上架';
+        listForSaleBtn.disabled = false;
+      }
+    }
+    
+    // 打开交易确认模态框
+    function openTransactionModal(type, amount, recipient, onConfirm) {
+      txTypeEl.textContent = type;
+      txAmountEl.textContent = `${amount.toFixed(2)} SOL`;
+      txRecipientEl.textContent = recipient;
+      
+      // 存储确认回调
+      confirmTxBtn.onclick = onConfirm;
+      
+      transactionModal.classList.remove('hidden');
+    }
+    
+    // 关闭交易确认模态框
+    function closeTransactionModal() {
+      transactionModal.classList.add('hidden');
+    }
+    
+    // 确认交易
+    async function confirmTransaction() {
+      closeTransactionModal();
+      
+      // 显示交易结果模态框（模拟交易处理中）
+      txResultTitle.textContent = '处理中';
+      txResultMessage.textContent = '正在确认你的交易...';
+      txSuccessIcon.classList.add('hidden');
+      txFailIcon.classList.add('hidden');
+      txResultModal.classList.remove('hidden');
+      
+      // 模拟交易延迟
+      setTimeout(async () => {
+        try {
+          // 实际应用中这里会调用Solana钱包API进行签名和发送交易
+          // 由于这是中心化后端模拟，我们只需调用相应的后端函数
+          if (typeof confirmTxBtn.onclick === 'function') {
+            await confirmTxBtn.onclick();
+          }
+          
+          // 显示成功结果
+          txResultTitle.textContent = '交易成功';
+          txResultMessage.textContent = '土地已成功购买';
+          txSuccessIcon.classList.remove('hidden');
+          txFailIcon.classList.add('hidden');
+        } catch (error) {
+          console.error('交易失败:', error);
+          
+          // 显示失败结果
+          txResultTitle.textContent = '交易失败';
+          txResultMessage.textContent = error.message || '交易处理失败';
+          txSuccessIcon.classList.add('hidden');
+          txFailIcon.classList.remove('hidden');
+        }
+      }, 2000);
+    }
+    
+    // 关闭结果模态框
+    async function closeResultModalHandler() {
+      txResultModal.classList.add('hidden');
+      await loadLandGrid();
+    }
+    
+    // 从开发者购买土地
+    async function buyLandFromDeveloper(landId, price) {
+      try {
+        if (!currentWallet) {
+          throw new Error('请先连接钱包');
+        }
+        
+        // 模拟发送交易到Solana网络
+        // 实际应用中，这里应该调用Solana钱包API创建并发送交易
+        
+        // 更新数据库记录
+        const { error } = await supabaseClient
+          .from('lands')
+          .update({ 
+            owner: currentWallet.publicKey,
+            for_sale: false,
+            price: price
+          })
+          .eq('id', landId);
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        showNotification('购买成功！土地现在属于你了', 'success');
+      } catch (error) {
+        console.error('购买土地失败:', error);
+        throw new Error('购买土地失败: ' + error.message);
+      }
+    }
+    
+    // 从用户购买土地
+    async function buyLandFromUser(landId, price, seller) {
+      try {
+        if (!currentWallet) {
+          throw new Error('请先连接钱包');
+        }
+        
+        // 模拟发送交易到Solana网络
+        // 实际应用中，这里应该调用Solana钱包API创建并发送交易
+        
+        // 更新数据库记录
+        const { error } = await supabaseClient
+          .from('lands')
+          .update({ 
+            owner: currentWallet.publicKey,
+            for_sale: false,
+            price: price
+          })
+          .eq('id', landId);
+        
+        if (error) {
+          throw new Error(error.message);
+        }
+        
+        showNotification('购买成功！土地现在属于你了', 'success');
+      } catch (error) {
+        console.error('购买土地失败:', error);
+        throw new Error('购买土地失败: ' + error.message);
+      }
+    }
+    
+    // 显示通知
+    function showNotification(message, type = 'info') {
+      // 创建通知元素
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full z-50 ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+      }`;
+      
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <i class="fa fa-${
+            type === 'success' ? 'check-circle' : 
+            type === 'error' ? 'exclamation-circle' : 
+            'info-circle'
+          } mr-2"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      // 添加到页面
+      document.body.appendChild(notification);
+      
+      // 显示动画
+      setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+      }, 10);
+      
+      // 3秒后隐藏
+      setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>    
