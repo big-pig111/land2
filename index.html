@@ -720,6 +720,10 @@
           <input id="room-search-input" type="text" placeholder="搜索频道" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 6px;">
           <div id="contract-room-list" style="max-height: 180px; overflow-y: auto; background: #fffde7; border-radius: 8px; border: 1px solid #ffe082; padding: 4px 0;"></div>
         </div>
+        <div id="wallet-connect-box" class="wallet-connect-box" style="margin: 18px 0 0 0; justify-content: center;">
+          <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+          <div id="wallet-address" class="wallet-address" style="display:none"></div>
+        </div>
       </div>
       <div class="sidebar-bottom">
         <img class="sidebar-bonk-img" src="4.jpg" alt="Bonk1">
@@ -732,10 +736,6 @@
         <div class="chat-header">
           Bonk Chatroom
           <span class="channel-title" id="current-channel-title">🐶 Lobby</span>
-          <div id="wallet-connect-box" class="wallet-connect-box">
-            <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
-            <div id="wallet-address" class="wallet-address" style="display:none"></div>
-          </div>
         </div>
         <div class="chat-messages" id="chat-messages"></div>
         <form class="chat-input" id="chat-form">
@@ -1165,7 +1165,8 @@
           channelBtns.forEach(b => b.classList.remove('active'));
           channelTitle.textContent = addr;
           mainContentBox.innerHTML = `
-            <div class=\"chat-header\">\n              Bonk Chatroom\n              <span class=\"channel-title\" id=\"current-channel-title\">${addr}</span>\n              <div id=\"wallet-connect-box\" class=\"wallet-connect-box\">\n                <button id=\"wallet-connect-btn\" class=\"wallet-connect-btn\">🔗 Connect Wallet</button>\n                <div id=\"wallet-address\" class=\"wallet-address\" style=\"display:none\"></div>\n              </div>\n            </div>\n            <div class=\"chat-messages\" id=\"chat-messages\"></div>\n            <form class=\"chat-input\" id=\"chat-form\">\n              <input type=\"text\" id=\"message-input\" placeholder=\"Type a message...\" autocomplete=\"off\" required />\n              <button type=\"submit\">Send</button>\n            </form>\n          `;
+            <div class=\"chat-header\">\n              Bonk Chatroom\n              <span class=\"channel-title\" id=\"current-channel-title\">${addr}</span>\n              <div id=\"wallet-connect-box\" class=\"wallet-connect-box\">\n                <button id=\"wallet-connect-btn\" class=\"wallet-connect-btn\">🔗 Connect Wallet</button>\n                <div id=\"wallet-address\" class=\"wallet-address\" style=\"display:none\"></div>\n              </div>\n            </div>\n            <div class=\"chat-messages\" id=\"chat-messages\"></div>\n            <form class=\"chat-input\" id=\"chat-form\">\n              <input type=\"text\" id=\"message-input\" placeholder=\"Type a message...\" autocomplete=\"off\" required />\n              <button type=\"submit\">Send</button>
+          `;
           setTimeout(() => {
             const chatMessagesNew = document.getElementById('chat-messages');
             const chatFormNew = document.getElementById('chat-form');
