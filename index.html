@@ -683,6 +683,10 @@
           <button class="channel" data-channel="tech">💬 Tech</button>
           <button class="channel" data-channel="market">🚀 Market</button>
         </div>
+        <div class="contract-channel-box" style="padding: 12px 16px;">
+          <input id="contract-channel-input" type="text" placeholder="输入合约地址" style="width: 70%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+          <button id="contract-channel-btn" style="padding: 8px 16px; border-radius: 8px; background: var(--bonk-orange); color: #fff; border: none; font-weight: bold; margin-left: 8px;">搜索/创建频道</button>
+        </div>
       </div>
       <div class="sidebar-bottom">
         <img class="sidebar-bonk-img" src="4.jpg" alt="Bonk1">
@@ -720,7 +724,7 @@
   </div>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
-    import { getDatabase, ref, push, onChildAdded, onChildRemoved, off, remove } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+    import { getDatabase, ref, push, onChildAdded, onChildRemoved, off, remove, get, set } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
     import { getAuth, signInWithPopup, TwitterAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
     // Firebase 配置
     const firebaseConfig = {
@@ -1095,6 +1099,77 @@
         await updateWalletDisplay();
       }
     });
+
+    // 合约频道搜索/创建逻辑
+    const contractInput = document.getElementById('contract-channel-input');
+    const contractBtn = document.getElementById('contract-channel-btn');
+    contractBtn.onclick = async () => {
+      const contractAddr = contractInput.value.trim();
+      if (!contractAddr) {
+        alert('请输入合约地址');
+        return;
+      }
+      // 检查频道是否存在
+      const channelRef = ref(db, `channels/${contractAddr}`);
+      const snapshot = await get(channelRef);
+      if (snapshot.exists()) {
+        // 已存在，切换到该频道
+        currentChannel = contractAddr;
+        channelBtns.forEach(b => b.classList.remove('active'));
+        channelTitle.textContent = contractAddr;
+        mainContentBox.innerHTML = `
+          <div class="chat-header">
+            Bonk Chatroom
+            <span class="channel-title" id="current-channel-title">${contractAddr}</span>
+            <div id="wallet-connect-box" class="wallet-connect-box">
+              <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+              <div id="wallet-address" class="wallet-address" style="display:none"></div>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <form class="chat-input" id="chat-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+            <button type="submit">Send</button>
+          </form>
+        `;
+        setTimeout(() => {
+          const chatMessagesNew = document.getElementById('chat-messages');
+          const chatFormNew = document.getElementById('chat-form');
+          const messageInputNew = document.getElementById('message-input');
+          loadChannel(currentChannel, chatMessagesNew);
+          bindChatFormEvents(chatFormNew, messageInputNew);
+        }, 0);
+      } else {
+        // 不存在，创建频道
+        await set(channelRef, { messages: {} });
+        alert('频道已创建，已切换到该频道');
+        currentChannel = contractAddr;
+        channelBtns.forEach(b => b.classList.remove('active'));
+        channelTitle.textContent = contractAddr;
+        mainContentBox.innerHTML = `
+          <div class="chat-header">
+            Bonk Chatroom
+            <span class="channel-title" id="current-channel-title">${contractAddr}</span>
+            <div id="wallet-connect-box" class="wallet-connect-box">
+              <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+              <div id="wallet-address" class="wallet-address" style="display:none"></div>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <form class="chat-input" id="chat-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+            <button type="submit">Send</button>
+          </form>
+        `;
+        setTimeout(() => {
+          const chatMessagesNew = document.getElementById('chat-messages');
+          const chatFormNew = document.getElementById('chat-form');
+          const messageInputNew = document.getElementById('message-input');
+          loadChannel(currentChannel, chatMessagesNew);
+          bindChatFormEvents(chatFormNew, messageInputNew);
+        }, 0);
+      }
+    };
   </script>
 </body>
 </html>
