@@ -717,7 +717,7 @@
           <button class="channel" data-channel="market">🚀 Market</button>
         </div>
         <div class="contract-room-list-box" style="padding: 8px 12px 0 12px;">
-          <input id="room-search-input" type="text" placeholder="搜索频道" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 6px;">
+          <input id="room-search-input" type="text" placeholder="Search channel" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 6px;">
           <div id="contract-room-list" style="max-height: 180px; overflow-y: auto; background: #fffde7; border-radius: 8px; border: 1px solid #ffe082; padding: 4px 0;"></div>
         </div>
         <div id="wallet-connect-box" class="wallet-connect-box" style="margin: 18px 0 0 0; justify-content: center;">
@@ -1142,7 +1142,7 @@
       roomListBox.innerHTML = '';
       // 创建频道按钮
       const createBtn = document.createElement('button');
-      createBtn.textContent = '+ 创建频道';
+      createBtn.textContent = '+ Create Channel';
       createBtn.style = 'width:96%;margin:4px 2%;padding:7px 0;border-radius:7px;background:var(--bonk-orange);color:#fff;font-weight:bold;border:none;cursor:pointer;';
       createBtn.onclick = createChannelByPrompt;
       roomListBox.appendChild(createBtn);
@@ -1150,7 +1150,7 @@
       if (filtered.length === 0) {
         const emptyDiv = document.createElement('div');
         emptyDiv.style = 'color:#bbb;padding:8px;text-align:center;';
-        emptyDiv.textContent = '无匹配频道';
+        emptyDiv.textContent = 'No matching channel';
         roomListBox.appendChild(emptyDiv);
         return;
       }
@@ -1195,31 +1195,31 @@
     async function createChannelByPrompt() {
       // 检查是否已连接钱包
       if (!currentWallet) {
-        alert('请先连接钱包再创建频道');
+        alert('Please connect your wallet before creating a channel.');
         return;
       }
       // 检查代币余额
       if (typeof fetchTokenBalance === 'function') {
         const balance = await fetchTokenBalance(currentWallet);
         if (balance < 100) {
-          alert('创建频道需要持有至少100个代币');
+          alert('You need to hold at least 100 tokens to create a channel.');
           return;
         }
       }
-      const contractAddr = prompt('请输入合约地址（必须以bonk结尾）');
+      const contractAddr = prompt('Please enter the contract address (must end with bonk)');
       if (!contractAddr) return;
       if (!contractAddr.toLowerCase().endsWith('bonk')) {
-        alert('必须以letsbonk上发行代币的合约才能创建');
+        alert('Only contracts issued on letsbonk can be used to create a channel.');
         return;
       }
       const channelRef = ref(db, `channels/${contractAddr}`);
       const snapshot = await get(channelRef);
       if (snapshot.exists()) {
-        alert('频道已存在');
+        alert('Channel already exists.');
         return;
       }
       await set(channelRef, { messages: {} });
-      alert('频道已创建');
+      alert('Channel created successfully.');
       // 自动切换到新频道并清空搜索框
       roomSearchInput.value = '';
       currentChannel = contractAddr;
