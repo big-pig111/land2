@@ -1041,9 +1041,38 @@
     const walletBtn = document.getElementById('wallet-connect-btn');
     const walletAddrDiv = document.getElementById('wallet-address');
     let currentWallet = null;
+    let currentBalance = null;
+
+    // 目标代币合约地址
+    const TOKEN_MINT = 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263';
+
+    // 获取 SPL 代币余额
+    async function fetchTokenBalance(pubkeyStr) {
+      const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+      const owner = new window.solanaWeb3.PublicKey(pubkeyStr);
+      const mint = new window.solanaWeb3.PublicKey(TOKEN_MINT);
+      // 获取所有token账户
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, { mint });
+      let amount = 0;
+      if (tokenAccounts.value.length > 0) {
+        amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+      }
+      return amount;
+    }
 
     function shortAddr(addr) {
       return addr.slice(0, 4) + '...' + addr.slice(-4);
+    }
+
+    async function updateWalletDisplay() {
+      walletBtn.style.display = 'none';
+      walletAddrDiv.style.display = 'block';
+      let display = '🟢 ' + shortAddr(currentWallet);
+      if (currentBalance !== null) {
+        display += ` | 余额: ${currentBalance}`;
+      }
+      walletAddrDiv.textContent = display;
+      walletAddrDiv.title = currentWallet;
     }
 
     walletBtn.onclick = async () => {
@@ -1051,10 +1080,9 @@
         try {
           const resp = await window.solana.connect();
           currentWallet = resp.publicKey.toString();
-          walletBtn.style.display = 'none';
-          walletAddrDiv.style.display = 'block';
-          walletAddrDiv.textContent = '🟢 ' + shortAddr(currentWallet);
-          walletAddrDiv.title = currentWallet;
+          // 查询余额
+          currentBalance = await fetchTokenBalance(currentWallet);
+          await updateWalletDisplay();
         } catch (e) {
           alert('Wallet connect failed: ' + e.message);
         }
@@ -1067,6 +1095,7 @@
       if (window.solana && window.solana.isPhantom) {
         await window.solana.disconnect();
         currentWallet = null;
+        currentBalance = null;
         walletBtn.style.display = 'block';
         walletAddrDiv.style.display = 'none';
       }
