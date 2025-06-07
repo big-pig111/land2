@@ -1038,62 +1038,35 @@
       usernameModal.style.display = 'flex';
     };
 
-    // 钱包适配器
-    const { PhantomWalletAdapter, SolflareWalletAdapter, BackpackWalletAdapter } = window['@solana/wallet-adapter-wallets'];
-    const { WalletAdapterNetwork } = window['@solana/wallet-adapter-base'];
-    const { Connection, clusterApiUrl, PublicKey } = window.solanaWeb3;
-
-    const walletList = [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new BackpackWalletAdapter()
-      // 你可以继续添加其他钱包
-    ];
-
-    let currentWallet = null;
-
+    // 钱包连接（只支持 Phantom）
     const walletBtn = document.getElementById('wallet-connect-btn');
     const walletAddrDiv = document.getElementById('wallet-address');
+    let currentWallet = null;
 
     function shortAddr(addr) {
       return addr.slice(0, 4) + '...' + addr.slice(-4);
     }
 
     walletBtn.onclick = async () => {
-      // 只显示已安装的钱包
-      const readyWallets = walletList.filter(w => w.readyState === 'Installed');
-      if (readyWallets.length === 0) {
-        alert('No Solana wallet extension detected. Please install Phantom, Solflare, Backpack or other supported wallets.');
-        return;
-      }
-      let wallet = null;
-      if (readyWallets.length === 1) {
-        wallet = readyWallets[0];
-      } else {
-        // 简单弹窗选择
-        const names = readyWallets.map(w => w.name);
-        const pick = prompt('Choose wallet:\n' + names.map((n, i) => `${i + 1}. ${n}`).join('\n'));
-        const idx = parseInt(pick) - 1;
-        if (idx >= 0 && idx < readyWallets.length) {
-          wallet = readyWallets[idx];
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const resp = await window.solana.connect();
+          currentWallet = resp.publicKey.toString();
+          walletBtn.style.display = 'none';
+          walletAddrDiv.style.display = 'block';
+          walletAddrDiv.textContent = '🟢 ' + shortAddr(currentWallet);
+          walletAddrDiv.title = currentWallet;
+        } catch (e) {
+          alert('Wallet connect failed: ' + e.message);
         }
-      }
-      if (!wallet) return;
-      try {
-        await wallet.connect();
-        currentWallet = wallet;
-        walletBtn.style.display = 'none';
-        walletAddrDiv.style.display = 'block';
-        walletAddrDiv.textContent = '🟢 ' + shortAddr(wallet.publicKey.toBase58());
-        walletAddrDiv.title = wallet.publicKey.toBase58();
-      } catch (e) {
-        alert('Wallet connect failed: ' + e.message);
+      } else {
+        alert('Please install Phantom Wallet extension!');
       }
     };
 
     walletAddrDiv.onclick = async () => {
-      if (currentWallet) {
-        await currentWallet.disconnect();
+      if (window.solana && window.solana.isPhantom) {
+        await window.solana.disconnect();
         currentWallet = null;
         walletBtn.style.display = 'block';
         walletAddrDiv.style.display = 'none';
