@@ -279,6 +279,7 @@
       gap: 18px;
       text-shadow: 2px 2px 0 #ff3d00, 0 2px 8px #fffde7;
       border-radius: 0;
+      justify-content: space-between;
     }
     .chat-header .channel-title {
       font-size: 1.4rem;
@@ -619,10 +620,8 @@
       color: #fff;
     }
     .wallet-connect-box {
-      position: fixed;
-      top: 24px;
-      right: 120px;
-      z-index: 10;
+      position: static;
+      margin-left: 16px;
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -671,10 +670,6 @@
   <div class="bg-bubble bg-bubble3"></div>
   <img class="bg-bonk bg-bonk-right" src="2.jpg" alt="Bonk右上狗狗">
   <img class="bg-bonk bg-bonk-left" src="3.jpg" alt="Bonk左下狗狗">
-  <div id="wallet-connect-box" class="wallet-connect-box">
-    <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
-    <div id="wallet-address" class="wallet-address" style="display:none"></div>
-  </div>
   <div class="app-container">
     <aside class="sidebar">
       <div class="sidebar-content">
@@ -704,6 +699,10 @@
         <div class="chat-header">
           Bonk Chatroom
           <span class="channel-title" id="current-channel-title">🐶 Lobby</span>
+          <div id="wallet-connect-box" class="wallet-connect-box">
+            <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+            <div id="wallet-address" class="wallet-address" style="display:none"></div>
+          </div>
         </div>
         <div class="chat-messages" id="chat-messages"></div>
         <form class="chat-input" id="chat-form">
