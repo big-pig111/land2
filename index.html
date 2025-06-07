@@ -1060,17 +1060,22 @@
     }
 
     walletBtn.onclick = async () => {
-      // 弹出钱包选择
+      // 只显示已安装的钱包
+      const readyWallets = walletList.filter(w => w.readyState === 'Installed');
+      if (readyWallets.length === 0) {
+        alert('No Solana wallet extension detected. Please install Phantom, Solflare, Backpack or other supported wallets.');
+        return;
+      }
       let wallet = null;
-      if (walletList.length === 1) {
-        wallet = walletList[0];
+      if (readyWallets.length === 1) {
+        wallet = readyWallets[0];
       } else {
         // 简单弹窗选择
-        const names = walletList.map(w => w.name);
+        const names = readyWallets.map(w => w.name);
         const pick = prompt('Choose wallet:\n' + names.map((n, i) => `${i + 1}. ${n}`).join('\n'));
         const idx = parseInt(pick) - 1;
-        if (idx >= 0 && idx < walletList.length) {
-          wallet = walletList[idx];
+        if (idx >= 0 && idx < readyWallets.length) {
+          wallet = readyWallets[idx];
         }
       }
       if (!wallet) return;
