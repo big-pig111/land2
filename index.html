@@ -1048,6 +1048,10 @@
 
     // 获取 SPL 代币余额
     async function fetchTokenBalance(pubkeyStr) {
+      if (!window.solanaWeb3) {
+        alert('Solana web3.js library not loaded. Please check your <script> tag for @solana/web3.js!');
+        return 0;
+      }
       const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
       const owner = new window.solanaWeb3.PublicKey(pubkeyStr);
       const mint = new window.solanaWeb3.PublicKey(TOKEN_MINT);
