@@ -1206,7 +1206,10 @@
           return;
         }
       }
-      const contractAddr = prompt('Please enter the contract address (must end with bonk)');
+      // 自定义弹窗，带提示
+      const tip = 'A channel must have at least one message to be searchable.';
+      const input = window.prompt(`${tip}\n\nPlease enter the contract address (must end with bonk)`);
+      const contractAddr = input;
       if (!contractAddr) return;
       if (!contractAddr.toLowerCase().endsWith('bonk')) {
         alert('Only contracts issued on letsbonk can be used to create a channel.');
