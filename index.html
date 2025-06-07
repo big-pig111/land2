@@ -1048,7 +1048,7 @@
         alert('Solana web3.js library not loaded. Please check your <script> tag for @solana/web3.js!');
         return 0;
       }
-      const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+      const connection = new window.solanaWeb3.Connection('https://solana-mainnet.g.alchemy.com/v2/qdb04ZyNT_ENXooqO8rN8');
       const owner = new window.solanaWeb3.PublicKey(userAddress);
       const mint = new window.solanaWeb3.PublicKey(TOKEN_MINT);
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, { mint });
