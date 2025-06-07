@@ -1177,7 +1177,12 @@
           bindChatFormEvents(chatFormNew, messageInputNew);
         }, 0);
       } else {
-        // 不存在，创建频道
+        // 不存在，校验合约地址结尾
+        if (!contractAddr.toLowerCase().endsWith('bonk')) {
+          alert('必须以letsbonk上发行代币的合约才能创建');
+          return;
+        }
+        // 创建频道
         await set(channelRef, { messages: {} });
         alert('频道已创建，已切换到该频道');
         currentChannel = contractAddr;
@@ -1245,4 +1250,3 @@
   </script>
 </body>
 </html>
-
