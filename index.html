@@ -1037,7 +1037,7 @@
       usernameModal.style.display = 'flex';
     };
 
-    // 钱包连接（只支持 Phantom）
+    // 钱包连接（只支持 Phantom）+ SPL 代币余额显示
     const walletBtn = document.getElementById('wallet-connect-btn');
     const walletAddrDiv = document.getElementById('wallet-address');
     let currentWallet = null;
@@ -1047,15 +1047,14 @@
     const TOKEN_MINT = 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263';
 
     // 获取 SPL 代币余额
-    async function fetchTokenBalance(pubkeyStr) {
+    async function fetchTokenBalance(userAddress) {
       if (!window.solanaWeb3) {
         alert('Solana web3.js library not loaded. Please check your <script> tag for @solana/web3.js!');
         return 0;
       }
       const connection = new window.solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
-      const owner = new window.solanaWeb3.PublicKey(pubkeyStr);
+      const owner = new window.solanaWeb3.PublicKey(userAddress);
       const mint = new window.solanaWeb3.PublicKey(TOKEN_MINT);
-      // 获取所有token账户
       const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, { mint });
       let amount = 0;
       if (tokenAccounts.value.length > 0) {
@@ -1065,18 +1064,17 @@
     }
 
     function shortAddr(addr) {
-      return addr.slice(0, 4) + '...' + addr.slice(-4);
+      return addr ? addr.slice(0, 4) + '...' + addr.slice(-4) : '';
     }
 
     async function updateWalletDisplay() {
-      walletBtn.style.display = 'none';
-      walletAddrDiv.style.display = 'block';
-      let display = '🟢 ' + shortAddr(currentWallet);
+      let display = shortAddr(currentWallet);
       if (currentBalance !== null) {
         display += ` | 余额: ${currentBalance}`;
       }
-      walletAddrDiv.textContent = display;
-      walletAddrDiv.title = currentWallet;
+      walletBtn.textContent = display ? display : '🔗 Connect Wallet';
+      walletAddrDiv.style.display = 'none';
+      walletBtn.title = currentWallet || '';
     }
 
     walletBtn.onclick = async () => {
@@ -1084,26 +1082,23 @@
         try {
           const resp = await window.solana.connect();
           currentWallet = resp.publicKey.toString();
-          // 查询余额
           currentBalance = await fetchTokenBalance(currentWallet);
           await updateWalletDisplay();
-        } catch (e) {
-          alert('Wallet connect failed: ' + e.message);
-        }
+        } catch (e) {}
       } else {
-        alert('Please install Phantom Wallet extension!');
+        alert('Please install Phantom Wallet');
+        window.open('https://phantom.app/', '_blank');
       }
     };
 
-    walletAddrDiv.onclick = async () => {
-      if (window.solana && window.solana.isPhantom) {
-        await window.solana.disconnect();
-        currentWallet = null;
-        currentBalance = null;
-        walletBtn.style.display = 'block';
-        walletAddrDiv.style.display = 'none';
+    // 页面加载时自动检测已连接钱包
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.solana && window.solana.isPhantom && window.solana.isConnected && window.solana.publicKey) {
+        currentWallet = window.solana.publicKey.toString();
+        currentBalance = await fetchTokenBalance(currentWallet);
+        await updateWalletDisplay();
       }
-    };
+    });
   </script>
 </body>
 </html>
