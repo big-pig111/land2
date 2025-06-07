@@ -1165,8 +1165,7 @@
           channelBtns.forEach(b => b.classList.remove('active'));
           channelTitle.textContent = addr;
           mainContentBox.innerHTML = `
-            <div class=\"chat-header\">\n              Bonk Chatroom\n              <span class=\"channel-title\" id=\"current-channel-title\">${addr}</span>\n              <div id=\"wallet-connect-box\" class=\"wallet-connect-box\">\n                <button id=\"wallet-connect-btn\" class=\"wallet-connect-btn\">🔗 Connect Wallet</button>\n                <div id=\"wallet-address\" class=\"wallet-address\" style=\"display:none\"></div>\n              </div>\n            </div>\n            <div class=\"chat-messages\" id=\"chat-messages\"></div>\n            <form class=\"chat-input\" id=\"chat-form\">\n              <input type=\"text\" id=\"message-input\" placeholder=\"Type a message...\" autocomplete=\"off\" required />\n              <button type=\"submit\">Send</button>
-          `;
+            <div class=\"chat-header\">\n              Bonk Chatroom\n              <span class=\"channel-title\" id=\"current-channel-title\">${addr}</span>\n              <div id=\"wallet-connect-box\" class=\"wallet-connect-box\">\n                <button id=\"wallet-connect-btn\" class=\"wallet-connect-btn\">🔗 Connect Wallet</button>\n                <div id=\"wallet-address\" class=\"wallet-address\" style=\"display:none\"></div>\n              </div>\n            </div>\n            <div class=\"chat-messages\" id=\"chat-messages\"></div>\n            <form class=\"chat-input\" id=\"chat-form\">\n              <input type=\"text\" id=\"message-input\" placeholder=\"Type a message...\" autocomplete=\"off\" required />\n              <button type=\"submit\">Send</button>\n            </form>\n          `;
           setTimeout(() => {
             const chatMessagesNew = document.getElementById('chat-messages');
             const chatFormNew = document.getElementById('chat-form');
@@ -1194,6 +1193,19 @@
 
     // 频道创建入口：用弹窗方式
     async function createChannelByPrompt() {
+      // 检查是否已连接钱包
+      if (!currentWallet) {
+        alert('请先连接钱包再创建频道');
+        return;
+      }
+      // 检查代币余额
+      if (typeof fetchTokenBalance === 'function') {
+        const balance = await fetchTokenBalance(currentWallet);
+        if (balance < 100) {
+          alert('创建频道需要持有至少100个代币');
+          return;
+        }
+      }
       const contractAddr = prompt('请输入合约地址（必须以bonk结尾）');
       if (!contractAddr) return;
       if (!contractAddr.toLowerCase().endsWith('bonk')) {
@@ -1214,20 +1226,7 @@
       channelBtns.forEach(b => b.classList.remove('active'));
       channelTitle.textContent = contractAddr;
       mainContentBox.innerHTML = `
-        <div class="chat-header">
-          Bonk Chatroom
-          <span class="channel-title" id="current-channel-title">${contractAddr}</span>
-          <div id="wallet-connect-box" class="wallet-connect-box">
-            <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
-            <div id="wallet-address" class="wallet-address" style="display:none"></div>
-          </div>
-        </div>
-        <div class="chat-messages" id="chat-messages"></div>
-        <form class="chat-input" id="chat-form">
-          <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
-          <button type="submit">Send</button>
-        </form>
-      `;
+        <div class=\"chat-header\">\n          Bonk Chatroom\n          <span class=\"channel-title\" id=\"current-channel-title\">${contractAddr}</span>\n          <div id=\"wallet-connect-box\" class=\"wallet-connect-box\">\n            <button id=\"wallet-connect-btn\" class=\"wallet-connect-btn\">🔗 Connect Wallet</button>\n            <div id=\"wallet-address\" class=\"wallet-address\" style=\"display:none\"></div>\n          </div>\n        </div>\n        <div class=\"chat-messages\" id=\"chat-messages\"></div>\n        <form class=\"chat-input\" id=\"chat-form\">\n          <input type=\"text\" id=\"message-input\" placeholder=\"Type a message...\" autocomplete=\"off\" required />\n          <button type=\"submit\">Send</button>\n        </form>\n      `;
       setTimeout(() => {
         const chatMessagesNew = document.getElementById('chat-messages');
         const chatFormNew = document.getElementById('chat-form');
