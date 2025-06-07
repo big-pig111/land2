@@ -1,1 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bonk Chatroom</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+  <script src="index.iife.min.js"></script>
+  <style>
+    :root {
+      --bonk-orange: #ff9800;
+      --bonk-red: #ff3d00;
+      --bonk-yellow: #ffe082;
+      --bonk-bg: linear-gradient(135deg, #fffbe6 0%, #ffe082 40%, #ff9800 100%);
+      --bonk-border: #ffb300;
+      --bonk-chat: #fff3e0;
+      --bonk-chat-me: #ffe0b2;
+      --bonk-shadow: 0 4px 32px rgba(255, 152, 0, 0.18);
+      --bonk-font: 'Luckiest Guy', 'Roboto', 'Microsoft YaHei', Arial, sans-serif;
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      font-family: var(--bonk-font);
+      min-height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      /* 多层渐变+光斑 */
+      background: var(--bonk-bg),
+        radial-gradient(circle at 80% 10%, #fffde7cc 0, #fffde700 60%),
+        radial-gradient(circle at 20% 80%, #ffe08299 0, #ffe08200 70%),
+        radial-gradient(circle at 60% 60%, #ff980044 0, #ff980000 80%);
+      position: relative;
+    }
+    /* SVG波浪背景 */
+    .bg-waves {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      width: 100vw;
+      height: 220px;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.7;
+    }
+    /* 光斑动画 */
+    .bg-bubble {
+      position: fixed;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.18;
+      animation: float 12s linear infinite alternate;
+      filter: blur(2px);
+    }
+    .bg-bubble1 {
+      width: 220px; height: 220px;
+      left: 8vw; top: 12vh;
+      background: #fffde7;
+      animation-delay: 0s;
+    }
+    .bg-bubble2 {
+      width: 160px; height: 160px;
+      right: 10vw; top: 30vh;
+      background: #ffe082;
+      animation-delay: 2s;
+    }
+    .bg-bubble3 {
+      width: 120px; height: 120px;
+      left: 20vw; bottom: 18vh;
+      background: #ff9800;
+      animation-delay: 4s;
+    }
+    @keyframes float {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-30px) scale(1.08); }
+    }
+    /* Bonk狗狗插画角标 */
+    .bg-bonk {
+      position: fixed;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.92;
+      filter: drop-shadow(0 4px 16px #ff980088);
+      user-select: none;
+    }
+    .bg-bonk-right {
+      top: 12px;
+      right: 12px;
+      width: 90px;
+    }
+    .bg-bonk-left {
+      left: 8px;
+      bottom: 8px;
+      width: 80px;
+    }
+    /* 主要内容区z-index提升 */
+    .app-container, .username-modal { position: relative; z-index: 2; }
+    .app-container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      min-width: 320px;
+      margin: 0;
+      padding: 0;
+    }
+    .sidebar {
+      width: 220px;
+      min-width: 180px;
+      background: var(--bonk-orange);
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      padding: 0;
+      box-shadow: 2px 0 16px rgba(255, 152, 0, 0.12);
+      z-index: 2;
+      position: relative;
+      justify-content: space-between;
+    }
+    .sidebar-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-bottom {
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-around;
+      gap: 0;
+      padding: 18px 0 12px 0;
+      background: transparent;
+      min-height: 90px;
+    }
+    .sidebar-bonk-img {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #ff980088;
+      background: #fffde7;
+      object-fit: cover;
+      transform: rotate(-8deg);
+      margin: 0 2px;
+      border: 2px solid #fffbe6;
+      transition: transform 0.2s;
+    }
+    .sidebar-bonk-img:nth-child(2) {
+      transform: rotate(10deg) scale(1.08);
+      z-index: 2;
+    }
+    .sidebar-bonk-img:nth-child(3) {
+      transform: rotate(-14deg) scale(0.95);
+      z-index: 1;
+    }
+    /* 用户头像展示 */
+    .user-avatar-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 18px 0 0 0;
+      gap: 8px;
+    }
+    .user-avatar-img {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      box-shadow: 0 2px 12px #ff980088;
+      background: #fffde7;
+      border: 3px solid #fffbe6;
+      object-fit: cover;
+      margin-bottom: 4px;
+    }
+    .user-avatar-name {
+      color: #fff;
+      font-size: 1.1rem;
+      font-family: 'Luckiest Guy', cursive;
+      text-shadow: 1px 1px 0 #ff3d00, 0 2px 8px #fffde7;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 32px 24px 24px 24px;
+      font-size: 2rem;
+      font-family: 'Luckiest Guy', cursive;
+      color: #fff;
+      letter-spacing: 2px;
+      user-select: none;
+      text-shadow: 2px 2px 0 #ff3d00, 0 2px 8px #fffde7;
+    }
+    .logo img {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: #fffde7;
+      border: 3px solid #fffde7;
+      object-fit: cover;
+      box-shadow: 0 2px 8px #ff9800;
+    }
+    .channels {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 0 16px;
+      margin-top: 24px;
+    }
+    .channel {
+      padding: 16px 20px;
+      border-radius: 14px;
+      font-size: 1.2rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 500;
+      color: #ff3d00;
+      background: #fffde7;
+      border: 2px solid transparent;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s, border 0.2s;
+      outline: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 2px 8px #ffe08244;
+    }
+    .channel.active, .channel:hover {
+      background: var(--bonk-yellow);
+      color: #fff;
+      border: 2px solid var(--bonk-red);
+      box-shadow: 0 4px 16px #ff980044;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: center;
+      background: var(--bonk-bg);
+      min-width: 0;
+      min-height: 0;
+      padding: 0;
+      margin: 0;
+    }
+    .chat-container {
+      background: var(--bonk-chat);
+      border-radius: 18px;
+      box-shadow: var(--bonk-shadow);
+      width: 100%;
+      max-width: 100vw;
+      height: 96vh;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 3px solid var(--bonk-border);
+      margin: 0;
+      position: relative;
+    }
+    .chat-header {
+      background: var(--bonk-orange);
+      color: #fff;
+      padding: 18px 32px;
+      font-size: 2.1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 700;
+      text-align: left;
+      letter-spacing: 2px;
+      border-bottom: 3px solid var(--bonk-border);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      text-shadow: 2px 2px 0 #ff3d00, 0 2px 8px #fffde7;
+      border-radius: 0;
+      justify-content: space-between;
+    }
+    .chat-header .channel-title {
+      font-size: 1.4rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 500;
+      color: #fffde7;
+      background: var(--bonk-red);
+      border-radius: 10px;
+      padding: 6px 18px;
+      margin-left: 16px;
+      letter-spacing: 1px;
+      box-shadow: 0 2px 8px #ff9800;
+    }
+    .chat-messages {
+      flex: 1;
+      padding: 24px 32px 12px 32px;
+      overflow-y: auto;
+      background: var(--bonk-chat);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+    .chat-messages::-webkit-scrollbar {
+      width: 10px;
+      background: #fffbe6;
+    }
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: var(--bonk-orange);
+      border-radius: 8px;
+    }
+    .message {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 80%;
+    }
+    .message .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--bonk-orange);
+      object-fit: cover;
+      box-shadow: 0 2px 8px #ff9800;
+    }
+    .message-content {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      background: #fffde7;
+      border-radius: 16px 16px 16px 4px;
+      padding: 14px 20px;
+      box-shadow: 0 2px 8px #ff980044;
+      font-size: 1.15rem;
+      word-break: break-word;
+      position: relative;
+      min-width: 80px;
+      max-width: 420px;
+    }
+    .message.me {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .message.me .message-content {
+      background: var(--bonk-chat-me);
+      border-radius: 16px 16px 4px 16px;
+      color: #ff3d00;
+      box-shadow: 0 2px 8px #ff980044;
+    }
+    .message.me .avatar {
+      border: 2px solid var(--bonk-red);
+    }
+    .message .meta {
+      font-size: 0.9rem;
+      color: #ff9800;
+      margin-bottom: 4px;
+      font-family: 'Roboto', Arial, sans-serif;
+      font-weight: 700;
+    }
+    .chat-input {
+      display: flex;
+      border-top: 3px solid var(--bonk-border);
+      background: var(--bonk-chat);
+      padding: 14px 32px;
+      gap: 10px;
+    }
+    .chat-input input {
+      flex: 1;
+      padding: 16px 18px;
+      border: 2px solid var(--bonk-border);
+      border-radius: 12px;
+      font-size: 1.15rem;
+      outline: none;
+      background: #fffbe6;
+      transition: border 0.2s;
+      font-family: 'Roboto', Arial, sans-serif;
+    }
+    .chat-input input:focus {
+      border: 2.5px solid var(--bonk-orange);
+    }
+    .chat-input button {
+      background: var(--bonk-red);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 32px;
+      font-size: 1.15rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      box-shadow: 0 2px 8px #ff980044;
+    }
+    .chat-input button:hover {
+      background: var(--bonk-orange);
+    }
+    .username-modal {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(255, 236, 179, 0.95);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .username-box {
+      background: #fffde7;
+      border-radius: 20px;
+      box-shadow: 0 4px 24px #ff980044;
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 22px;
+      border: 3px solid var(--bonk-border);
+    }
+    .username-box input {
+      padding: 12px 16px;
+      border: 2px solid var(--bonk-border);
+      border-radius: 10px;
+      font-size: 1.2rem;
+      outline: none;
+      background: #fffbe6;
+      font-family: 'Roboto', Arial, sans-serif;
+    }
+    .username-box button {
+      background: var(--bonk-orange);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 24px;
+      font-size: 1.1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .username-box button:hover {
+      background: var(--bonk-red);
+    }
+    /* 行情区发射台样式 */
+    .market-header {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      background: var(--bonk-orange);
+      color: #fff;
+     font-size: 1.2rem;
+      font-family: 'Luckiest Guy', cursive;
+     padding: 6px 16px;
+      border-bottom: 3px solid var(--bonk-border);
+        border-radius: 0;
+      box-shadow: 0 2px 8px #ff980044;
+           min-height: 38px;
+      height: 38px;
+    }
+    .market-header img {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #fffde7;
+      border: 3px solid #fffde7;
+      object-fit: cover;
+      box-shadow: 0 2px 8px #ff9800;
+    }
+    .launch-btn {
+      background: var(--bonk-red);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 28px;
+      font-size: 1.1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: auto;
+      box-shadow: 0 2px 8px #ff980044;
+      transition: background 0.2s;
+    }
+    .launch-btn:hover {
+      background: var(--bonk-orange);
+    }
+    .market-iframe-box {
+      flex: 1;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      background: #fffbe6;
+      border-radius: 0 0 0 0;
+      box-shadow: none;
+      padding: 0;
+            margin: 0;
+      height: calc(100% - 38px);
+    }
+    .market-iframe-box iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+      overflow: hidden;
+         border-radius: 0;
+      box-shadow: none;
+      background: #fffde7;
+      min-height: 0;
+    }
+    @media (max-width: 900px) {
+      .chat-container {
+        max-width: 100vw;
+        height: 100vh;
+        border-radius: 0;
+      }
+      .sidebar {
+        width: 48px;
+        min-width: 48px;
+      }
+      .logo {
+        flex-direction: column;
+        padding: 18px 0 12px 0;
+        font-size: 1.2rem;
+      }
+      .logo img {
+        width: 32px;
+        height: 32px;
+      }
+      .channels {
+        padding: 0 4px;
+        margin-top: 8px;
+      }
+      .channel {
+        padding: 10px 6px;
+        font-size: 1rem;
+      }
+      .chat-header, .market-header {
+        font-size: 1.1rem;
+        padding: 10px 8px;
+      }
+      .chat-messages {
+        padding: 8px 4px 4px 4px;
+        gap: 6px;
+      }
+      .chat-input {
+        padding: 6px 4px;
+        gap: 4px;
+      }
+      .market-iframe-box iframe {
+        min-height: 60vh;
+        border-radius: 6px;
+      }
+    }
+    @media (max-width: 600px) {
+      .app-container {
+        flex-direction: column;
+      }
+      .sidebar {
+        flex-direction: row;
+        width: 100vw;
+        height: 60px;
+        min-width: 0;
+        min-height: 60px;
+        box-shadow: 0 2px 12px #ff980044;
+      }
+      .logo {
+        padding: 8px 8px 8px 8px;
+        font-size: 1rem;
+      }
+      .channels {
+        flex-direction: row;
+        gap: 4px;
+        margin-top: 0;
+        padding: 0 4px;
+      }
+      .main-content {
+        padding: 0;
+      }
+      .chat-container {
+        border-radius: 0;
+        height: calc(100vh - 60px);
+        min-height: 0;
+      }
+      .chat-header {
+        font-size: 1.2rem;
+        padding: 12px 12px;
+      }
+      .chat-messages {
+        padding: 12px 8px 8px 8px;
+        gap: 8px;
+      }
+      .chat-input {
+        padding: 8px 8px;
+        gap: 4px;
+      }
+      .market-header {
+        font-size: 1.1rem;
+        padding: 12px 12px;
+      }
+      .market-header img {
+        width: 28px;
+        height: 28px;
+      }
+    }
+    .user-logout-btn {
+      margin-top: 6px;
+      background: #fff;
+      color: var(--bonk-red);
+      border: 2px solid var(--bonk-red);
+      border-radius: 8px;
+      padding: 6px 18px;
+      font-size: 1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #ff980044;
+      transition: background 0.2s, color 0.2s;
+    }
+    .user-logout-btn:hover {
+      background: var(--bonk-red);
+      color: #fff;
+    }
+    .wallet-connect-box {
+      position: static;
+      margin-left: 16px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+    }
+    .wallet-connect-btn {
+      background: linear-gradient(90deg, #ff9800 0%, #ff3d00 100%);
+      color: #fff;
+      border: none;
+      border-radius: 16px;
+      padding: 12px 28px;
+      font-size: 1.1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 12px #ff980088;
+      transition: background 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+    .wallet-connect-btn:hover {
+      background: linear-gradient(90deg, #ff3d00 0%, #ff9800 100%);
+      box-shadow: 0 4px 16px #ff9800cc;
+    }
+    .wallet-address {
+      background: #fffde7;
+      color: #ff3d00;
+      border-radius: 12px;
+      padding: 8px 18px;
+      font-size: 1rem;
+      font-family: 'Roboto', Arial, sans-serif;
+      font-weight: 700;
+      box-shadow: 0 2px 8px #ff980044;
+      cursor: pointer;
+      user-select: text;
+    }
+    .contract-room-list-box {
+      margin-top: 8px;
+    }
+    #contract-room-list {
+      max-height: 180px;
+      overflow-y: auto;
+      background: #fffde7;
+      border-radius: 8px;
+      border: 1px solid #ffe082;
+      padding: 4px 0;
+    }
+    .room-list-item {
+      padding: 8px 12px;
+      cursor: pointer;
+      font-size: 0.98rem;
+      color: #ff9800;
+      border-bottom: 1px solid #ffe082;
+      transition: background 0.15s;
+      border-radius: 6px;
+      margin: 2px 4px;
+    }
+    .room-list-item:hover, .room-list-item.active {
+      background: #ffe082;
+      color: #ff3d00;
+    }
+    #contract-room-list::-webkit-scrollbar {
+      width: 8px;
+      background: #fffbe6;
+    }
+    #contract-room-list::-webkit-scrollbar-thumb {
+      background: #ffe082;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 背景装饰 -->
+  <svg class="bg-waves" viewBox="0 0 1440 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0 120L60 110C120 100 240 80 360 90C480 100 600 140 720 150C840 160 960 140 1080 120C1200 100 1320 80 1380 70L1440 60V220H1380C1320 220 1200 220 1080 220C960 220 840 220 720 220C600 220 480 220 360 220C240 220 120 220 60 220H0V120Z" fill="#ffe082"/>
+    <path d="M0 180L60 170C120 160 240 140 360 150C480 160 600 200 720 210C840 220 960 200 1080 180C1200 160 1320 140 1380 130L1440 120V220H1380C1320 220 1200 220 1080 220C960 220 840 220 720 220C600 220 480 220 360 220C240 220 120 220 60 220H0V180Z" fill="#ff9800" fill-opacity="0.7"/>
+  </svg>
+  <div class="bg-bubble bg-bubble1"></div>
+  <div class="bg-bubble bg-bubble2"></div>
+  <div class="bg-bubble bg-bubble3"></div>
+  <img class="bg-bonk bg-bonk-right" src="2.jpg" alt="Bonk右上狗狗">
+  <img class="bg-bonk bg-bonk-left" src="3.jpg" alt="Bonk左下狗狗">
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="sidebar-content">
+        <div class="logo">
+          <img src="2.jpg" alt="Bonk Logo">
+          <span>BONK</span>
+        </div>
+        <div class="user-avatar-box" id="user-avatar-box" style="display:none">
+          <img class="user-avatar-img" id="user-avatar-img" src="" alt="User Avatar">
+          <div class="user-avatar-name" id="user-avatar-name"></div>
+          <button class="user-logout-btn" id="user-logout-btn">Log Out</button>
+        </div>
+        <div class="channels">
+          <button class="channel active" data-channel="lobby">🐶 Lobby</button>
+          <button class="channel" data-channel="tech">💬 Tech</button>
+          <button class="channel" data-channel="market">🚀 Market</button>
+        </div>
+        <div class="contract-channel-box" style="padding: 12px 16px;">
+          <input id="contract-channel-input" type="text" placeholder="输入合约地址" style="width: 70%; padding: 8px; border-radius: 8px; border: 1px solid #ccc;">
+          <button id="contract-channel-btn" style="padding: 8px 16px; border-radius: 8px; background: var(--bonk-orange); color: #fff; border: none; font-weight: bold; margin-left: 8px;">搜索/创建频道</button>
+        </div>
+        <div class="contract-room-list-box" style="padding: 8px 12px 0 12px;">
+          <input id="room-search-input" type="text" placeholder="搜索频道" style="width: 100%; padding: 6px; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 6px;">
+          <div id="contract-room-list" style="max-height: 180px; overflow-y: auto; background: #fffde7; border-radius: 8px; border: 1px solid #ffe082; padding: 4px 0;"></div>
+        </div>
+      </div>
+      <div class="sidebar-bottom">
+        <img class="sidebar-bonk-img" src="4.jpg" alt="Bonk1">
+        <img class="sidebar-bonk-img" src="5.jpg" alt="Bonk2">
+        <img class="sidebar-bonk-img" src="6.jpg" alt="Bonk3">
+      </div>
+    </aside>
+    <main class="main-content">
+      <div class="chat-container" id="main-content-box">
+        <div class="chat-header">
+          Bonk Chatroom
+          <span class="channel-title" id="current-channel-title">🐶 Lobby</span>
+          <div id="wallet-connect-box" class="wallet-connect-box">
+            <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+            <div id="wallet-address" class="wallet-address" style="display:none"></div>
+          </div>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <form class="chat-input" id="chat-form">
+          <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+          <button type="submit">Send</button>
+        </form>
+      </div>
+    </main>
+  </div>
+  <div class="username-modal" id="username-modal">
+    <div class="username-box">
+      <h2>Enter your nickname</h2>
+      <input type="text" id="username-input" maxlength="16" placeholder="Nickname" required />
+      <button id="username-btn">Enter Chatroom</button>
+      <button id="twitter-login-btn" style="background:#1da1f2;color:#fff;margin-top:8px;">
+        <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f426.svg" style="width:20px;vertical-align:middle;margin-right:6px;">Login with Twitter
+      </button>
+    </div>
+  </div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getDatabase, ref, push, onChildAdded, onChildRemoved, off, remove, get, set, onValue } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-database.js";
+    import { getAuth, signInWithPopup, TwitterAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-auth.js";
+    // Firebase 配置
+    const firebaseConfig = {
+      apiKey: "AIzaSyA5Z5ieEbAcfQX0kxGSn9ldGXhzvAwx_8M",
+      authDomain: "chat-294cc.firebaseapp.com",
+      projectId: "chat-294cc",
+      storageBucket: "chat-294cc.firebasestorage.app",
+      messagingSenderId: "913615304269",
+      appId: "1:913615304269:web:a7634789985f09758e4e04",
+      measurementId: "G-16E82FDM89",
+      databaseURL: "https://chat-294cc-default-rtdb.firebaseio.com/"
+    };
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const auth = getAuth(app);
+    const provider = new TwitterAuthProvider();
+
+    // Bonk狗狗头像
+    const bonkAvatar = "2.jpg";
+
+    // 频道定义
+    const channels = [
+      { key: 'lobby', name: '🐶 Lobby' },
+      { key: 'tech', name: '💬 Tech' },
+      { key: 'market', name: '🚀 Market' }
+    ];
+    let currentChannel = 'lobby';
+    let username = '';
+    let messagesRef = null;
+    let unsubscribe = null;
+
+    // DOM
+    const usernameModal = document.getElementById('username-modal');
+    const usernameInput = document.getElementById('username-input');
+    const usernameBtn = document.getElementById('username-btn');
+    const chatMessages = document.getElementById('chat-messages');
+    const chatForm = document.getElementById('chat-form');
+    const messageInput = document.getElementById('message-input');
+    const channelBtns = document.querySelectorAll('.channel');
+    const channelTitle = document.getElementById('current-channel-title');
+    const mainContentBox = document.getElementById('main-content-box');
+
+    // 头像生成相关
+    function getOrCreateAvatarSeed() {
+      let seed = localStorage.getItem('bonk-avatar-seed');
+      if (!seed) {
+        seed = Math.random().toString(36).substring(2, 12) + Date.now();
+        localStorage.setItem('bonk-avatar-seed', seed);
+      }
+      return seed;
+    }
+    function getAvatarUrl(seed) {
+      return `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(seed)}`;
+    }
+    function getCurrentAvatarUrl() {
+      return localStorage.getItem('chat-avatar') || getAvatarUrl(getOrCreateAvatarSeed());
+    }
+    function showUserAvatarBox(name, avatarUrl) {
+      const box = document.getElementById('user-avatar-box');
+      const img = document.getElementById('user-avatar-img');
+      const n = document.getElementById('user-avatar-name');
+      const seed = getOrCreateAvatarSeed();
+      img.src = avatarUrl || getAvatarUrl(seed);
+      n.textContent = name || '';
+      box.style.display = 'flex';
+    }
+
+    // 获取当前用户推特用户名
+    function getCurrentTwitterUsername() {
+      return localStorage.getItem('chat-twitter-username') || '';
+    }
+
+    let lastSendTime = 0; // 记录上次发送时间
+    // 绑定聊天表单发送事件
+    function bindChatFormEvents(chatFormEl, messageInputEl) {
+      if (!chatFormEl || !messageInputEl) return;
+      chatFormEl.onsubmit = (e) => {
+        e.preventDefault();
+        const text = messageInputEl.value.trim();
+        if (!text || !username) return;
+        const now = Date.now();
+        // 判断是否为Twitter登录用户
+        const isTwitterUser = !!getCurrentTwitterUsername();
+        const limit = isTwitterUser ? 10000 : 60000; // Twitter用户10秒，匿名用户60秒
+        if (now - lastSendTime < limit) {
+          alert(isTwitterUser ? 'You can only send one message every 10 seconds.' : 'Anonymous users can only send one message every 60 seconds.');
+          return;
+        }
+        lastSendTime = now;
+        push(ref(db, `channels/${currentChannel}/messages`), {
+          username,
+          text,
+          timestamp: now,
+          avatar: getCurrentAvatarUrl(),
+          twitterUsername: getCurrentTwitterUsername()
+        });
+        messageInputEl.value = '';
+      };
+    }
+
+    // 昵称输入
+    usernameBtn.onclick = () => {
+      const value = usernameInput.value.trim();
+      if (value) {
+        username = value;
+        usernameModal.style.display = 'none';
+        localStorage.setItem('chat-username', username);
+        loadChannel(currentChannel);
+        // 绑定初始表单事件
+        bindChatFormEvents(chatForm, messageInput);
+        showUserAvatarBox(username);
+      } else {
+        usernameInput.focus();
+      }
+    };
+    window.onload = () => {
+      const saved = localStorage.getItem('chat-username');
+      if (saved) {
+        username = saved;
+        usernameModal.style.display = 'none';
+        loadChannel(currentChannel);
+        // 绑定初始表单事件
+        bindChatFormEvents(chatForm, messageInput);
+        showUserAvatarBox(username);
+      } else {
+        usernameModal.style.display = 'flex';
+      }
+    };
+
+    // 频道切换
+    channelBtns.forEach(btn => {
+      btn.onclick = () => {
+        if (btn.classList.contains('active')) return;
+        channelBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentChannel = btn.getAttribute('data-channel');
+        channelTitle.textContent = btn.textContent;
+        if (currentChannel === 'market') {
+          // 行情频道：显示行情 iframe，隐藏聊天相关
+          mainContentBox.innerHTML = `
+            <div class="market-header">
+              <img src="${bonkAvatar}" alt="Bonk Logo">
+              letsbonk Launchpad
+              <button class="launch-btn" onclick="window.open('https://t.co/aSsQXTq8vN')">Launch 🚀</button>
+            </div>
+            <div class="market-iframe-box">
+              <iframe src="https://dexscreener.com/solana/DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263?embed=1&theme=light" allowfullscreen></iframe>
+            </div>
+          `;
+        } else {
+          // 聊天频道：恢复聊天界面
+          mainContentBox.innerHTML = `
+            <div class="chat-header">
+              Bonk Chatroom
+              <span class="channel-title" id="current-channel-title">${btn.textContent}</span>
+            </div>
+            <div class="chat-messages" id="chat-messages"></div>
+            <form class="chat-input" id="chat-form">
+              <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+              <button type="submit">Send</button>
+            </form>
+          `;
+          // 重新绑定 DOM
+          setTimeout(() => {
+            const chatMessagesNew = document.getElementById('chat-messages');
+            const chatFormNew = document.getElementById('chat-form');
+            const messageInputNew = document.getElementById('message-input');
+            // 重新监听消息
+            loadChannel(currentChannel, chatMessagesNew);
+            // 绑定发送
+            bindChatFormEvents(chatFormNew, messageInputNew);
+          }, 0);
+        }
+      };
+    });
+
+    // 加载频道消息
+    function loadChannel(channelKey, chatMessagesBox = chatMessages) {
+      if (unsubscribe) unsubscribe();
+      if (messagesRef) off(messagesRef);
+      if (channelKey === 'market') return;
+      messagesRef = ref(db, `channels/${channelKey}/messages`);
+      chatMessagesBox.innerHTML = '';
+      onChildAdded(messagesRef, (snapshot) => {
+        const msg = snapshot.val();
+        addMessage(msg.username, msg.text, msg.timestamp, chatMessagesBox, snapshot.key, msg.avatar, msg.twitterUsername);
+      });
+      // 撤回监听
+      onChildRemoved(messagesRef, (snapshot) => {
+        const msgId = snapshot.key;
+        const msgDiv = chatMessagesBox.querySelector(`.message[data-id='${msgId}']`);
+        if (msgDiv) msgDiv.remove();
+      });
+      setTimeout(() => {
+        chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+      }, 100);
+    }
+
+    // 添加消息到页面
+    function addMessage(user, text, timestamp, chatMessagesBox = chatMessages, msgId = '', avatarUrl = '', twitterUsername = '') {
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'message' + (user === username ? ' me' : '');
+      if (msgId) msgDiv.setAttribute('data-id', msgId);
+      // 用户头像
+      let avatarSrc = avatarUrl;
+      if (!avatarSrc) {
+        if (user === username) {
+          avatarSrc = getCurrentAvatarUrl();
+        } else {
+          avatarSrc = getAvatarUrl(user);
+        }
+      }
+      // 只要有twitterUsername就可点击
+      let twitterProfileUrl = '';
+      if (twitterUsername) {
+        twitterProfileUrl = `https://twitter.com/${twitterUsername}`;
+      }
+      const avatar = document.createElement('img');
+      avatar.className = 'avatar';
+      avatar.src = avatarSrc;
+      avatar.alt = 'avatar';
+      if (twitterProfileUrl) {
+        avatar.style.cursor = 'pointer';
+        avatar.title = 'Visit Twitter profile';
+        avatar.onclick = (e) => {
+          e.stopPropagation();
+          window.open(twitterProfileUrl, '_blank');
+        };
+      }
+      // 内容
+      const contentDiv = document.createElement('div');
+      contentDiv.className = 'message-content';
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = `${user} · ${formatTime(timestamp)}`;
+      contentDiv.appendChild(meta);
+      contentDiv.appendChild(document.createTextNode(text));
+      // 撤回按钮（仅自己消息）
+      if (user === username && msgId) {
+        const revokeBtn = document.createElement('button');
+        revokeBtn.textContent = 'Revoke';
+        revokeBtn.title = 'Revoke this message';
+        revokeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:#fff3e0;color:#ff3d00;border:1px solid #ff9800;border-radius:6px;padding:2px 10px;font-size:0.9rem;cursor:pointer;z-index:2;';
+        revokeBtn.onclick = () => {
+          remove(ref(db, `channels/${currentChannel}/messages/${msgId}`));
+        };
+        contentDiv.style.position = 'relative';
+        contentDiv.appendChild(revokeBtn);
+      }
+      msgDiv.appendChild(avatar);
+      msgDiv.appendChild(contentDiv);
+      chatMessagesBox.appendChild(msgDiv);
+      chatMessagesBox.scrollTop = chatMessagesBox.scrollHeight;
+    }
+    // 时间格式化
+    function formatTime(ts) {
+      const date = new Date(ts);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }
+
+    // 登录按钮事件
+    document.getElementById('twitter-login-btn').onclick = async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        // user.displayName, user.photoURL, user.uid
+        localStorage.setItem('chat-username', user.displayName);
+        localStorage.setItem('chat-avatar', user.photoURL);
+        // 保存推特主页链接和用户名
+        let twitterProfile = '';
+        let twitterUsername = '';
+        if (user.reloadUserInfo && user.reloadUserInfo.screenName) {
+          twitterUsername = user.reloadUserInfo.screenName;
+          twitterProfile = `https://twitter.com/${twitterUsername}`;
+        } else if (user.providerData && user.providerData[0] && user.providerData[0].screenName) {
+          twitterUsername = user.providerData[0].screenName;
+          twitterProfile = `https://twitter.com/${twitterUsername}`;
+        }
+        if (twitterProfile && twitterUsername) {
+          localStorage.setItem('chat-twitter-profile', twitterProfile);
+          localStorage.setItem('chat-twitter-username', twitterUsername);
+        } else {
+          localStorage.removeItem('chat-twitter-profile');
+          localStorage.removeItem('chat-twitter-username');
+        }
+        showUserAvatarBox(user.displayName, user.photoURL);
+        username = user.displayName;
+        usernameModal.style.display = 'none';
+        loadChannel(currentChannel);
+        bindChatFormEvents(chatForm, messageInput);
+      } catch (error) {
+        alert('Twitter login failed: ' + error.message);
+      }
+    };
+
+    // 退出登录逻辑
+    document.getElementById('user-logout-btn').onclick = async () => {
+      // 清除本地存储
+      localStorage.removeItem('chat-username');
+      localStorage.removeItem('chat-avatar');
+      localStorage.removeItem('bonk-avatar-seed');
+      // Firebase signOut（如果是推特登录）
+      try {
+        await signOut(auth);
+      } catch (e) {}
+      // 隐藏头像区，弹出登录弹窗
+      document.getElementById('user-avatar-box').style.display = 'none';
+      username = '';
+      usernameModal.style.display = 'flex';
+    };
+
+    // 钱包连接（只支持 Phantom）+ SPL 代币余额显示
+    const walletBtn = document.getElementById('wallet-connect-btn');
+    const walletAddrDiv = document.getElementById('wallet-address');
+    let currentWallet = null;
+    let currentBalance = null;
+
+    // 目标代币合约地址
+    const TOKEN_MINT = 'DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263';
+
+    // 获取 SPL 代币余额
+    async function fetchTokenBalance(userAddress) {
+      if (!window.solanaWeb3) {
+        alert('Solana web3.js library not loaded. Please check your <script> tag for @solana/web3.js!');
+        return 0;
+      }
+      const connection = new window.solanaWeb3.Connection('https://solana-mainnet.g.alchemy.com/v2/qdb04ZyNT_ENXooqO8rN8');
+      const owner = new window.solanaWeb3.PublicKey(userAddress);
+      const mint = new window.solanaWeb3.PublicKey(TOKEN_MINT);
+      const tokenAccounts = await connection.getParsedTokenAccountsByOwner(owner, { mint });
+      let amount = 0;
+      if (tokenAccounts.value.length > 0) {
+        amount = tokenAccounts.value[0].account.data.parsed.info.tokenAmount.uiAmount;
+      }
+      return amount;
+    }
+
+    function shortAddr(addr) {
+      return addr ? addr.slice(0, 4) + '...' + addr.slice(-4) : '';
+    }
+
+    async function updateWalletDisplay() {
+      let display = shortAddr(currentWallet);
+      if (currentBalance !== null) {
+        display += ` | 余额: ${currentBalance}`;
+      }
+      walletBtn.textContent = display ? display : '🔗 Connect Wallet';
+      walletAddrDiv.style.display = 'none';
+      walletBtn.title = currentWallet || '';
+    }
+
+    walletBtn.onclick = async () => {
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const resp = await window.solana.connect();
+          currentWallet = resp.publicKey.toString();
+          currentBalance = await fetchTokenBalance(currentWallet);
+          await updateWalletDisplay();
+        } catch (e) {}
+      } else {
+        alert('Please install Phantom Wallet');
+        window.open('https://phantom.app/', '_blank');
+      }
+    };
+
+    // 页面加载时自动检测已连接钱包
+    document.addEventListener('DOMContentLoaded', async () => {
+      if (window.solana && window.solana.isPhantom && window.solana.isConnected && window.solana.publicKey) {
+        currentWallet = window.solana.publicKey.toString();
+        currentBalance = await fetchTokenBalance(currentWallet);
+        await updateWalletDisplay();
+      }
+    });
+
+    // 合约频道搜索/创建逻辑
+    const contractInput = document.getElementById('contract-channel-input');
+    const contractBtn = document.getElementById('contract-channel-btn');
+    contractBtn.onclick = async () => {
+      const contractAddr = contractInput.value.trim();
+      if (!contractAddr) {
+        alert('请输入合约地址');
+        return;
+      }
+      // 检查频道是否存在
+      const channelRef = ref(db, `channels/${contractAddr}`);
+      const snapshot = await get(channelRef);
+      if (snapshot.exists()) {
+        // 已存在，切换到该频道
+        currentChannel = contractAddr;
+        channelBtns.forEach(b => b.classList.remove('active'));
+        channelTitle.textContent = contractAddr;
+        mainContentBox.innerHTML = `
+          <div class="chat-header">
+            Bonk Chatroom
+            <span class="channel-title" id="current-channel-title">${contractAddr}</span>
+            <div id="wallet-connect-box" class="wallet-connect-box">
+              <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+              <div id="wallet-address" class="wallet-address" style="display:none"></div>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <form class="chat-input" id="chat-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+            <button type="submit">Send</button>
+          </form>
+        `;
+        setTimeout(() => {
+          const chatMessagesNew = document.getElementById('chat-messages');
+          const chatFormNew = document.getElementById('chat-form');
+          const messageInputNew = document.getElementById('message-input');
+          loadChannel(currentChannel, chatMessagesNew);
+          bindChatFormEvents(chatFormNew, messageInputNew);
+        }, 0);
+      } else {
+        // 不存在，创建频道
+        await set(channelRef, { messages: {} });
+        alert('频道已创建，已切换到该频道');
+        currentChannel = contractAddr;
+        channelBtns.forEach(b => b.classList.remove('active'));
+        channelTitle.textContent = contractAddr;
+        mainContentBox.innerHTML = `
+          <div class="chat-header">
+            Bonk Chatroom
+            <span class="channel-title" id="current-channel-title">${contractAddr}</span>
+            <div id="wallet-connect-box" class="wallet-connect-box">
+              <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+              <div id="wallet-address" class="wallet-address" style="display:none"></div>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-messages"></div>
+          <form class="chat-input" id="chat-form">
+            <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+            <button type="submit">Send</button>
+          </form>
+        `;
+        setTimeout(() => {
+          const chatMessagesNew = document.getElementById('chat-messages');
+          const chatFormNew = document.getElementById('chat-form');
+          const messageInputNew = document.getElementById('message-input');
+          loadChannel(currentChannel, chatMessagesNew);
+          bindChatFormEvents(chatFormNew, messageInputNew);
+        }, 0);
+      }
+    };
+
+    // 合约频道列表逻辑
+    const roomListBox = document.getElementById('contract-room-list');
+    const roomSearchInput = document.getElementById('room-search-input');
+    let allRooms = [];
+    function renderRoomList(filter = '') {
+      roomListBox.innerHTML = '';
+      const filtered = allRooms.filter(addr => addr.toLowerCase().includes(filter.toLowerCase()));
+      if (filtered.length === 0) {
+        roomListBox.innerHTML = '<div style="color:#bbb;padding:8px;text-align:center;">无匹配频道</div>';
+        return;
+      }
+      filtered.forEach(addr => {
+        const div = document.createElement('div');
+        div.className = 'room-list-item' + (currentChannel === addr ? ' active' : '');
+        div.textContent = addr;
+        div.onclick = () => {
+          contractInput.value = addr;
+          contractBtn.click();
+        };
+        roomListBox.appendChild(div);
+      });
+    }
+    onValue(ref(db, 'channels'), (snapshot) => {
+      if (snapshot.exists()) {
+        allRooms = Object.keys(snapshot.val());
+        renderRoomList(roomSearchInput.value);
+      } else {
+        allRooms = [];
+        renderRoomList(roomSearchInput.value);
+      }
+    });
+    roomSearchInput.addEventListener('input', () => {
+      renderRoomList(roomSearchInput.value);
+    });
+  </script>
+</body>
+</html>
 
