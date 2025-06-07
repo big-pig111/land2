@@ -1189,6 +1189,7 @@
       });
     }
     onValue(ref(db, 'channels'), (snapshot) => {
+      console.log('频道监听触发', snapshot.val());
       if (snapshot.exists()) {
         allRooms = Object.keys(snapshot.val());
         renderRoomList(roomSearchInput.value);
@@ -1217,6 +1218,33 @@
       }
       await set(channelRef, { messages: {} });
       alert('频道已创建');
+      // 自动切换到新频道并清空搜索框
+      roomSearchInput.value = '';
+      currentChannel = contractAddr;
+      channelBtns.forEach(b => b.classList.remove('active'));
+      channelTitle.textContent = contractAddr;
+      mainContentBox.innerHTML = `
+        <div class="chat-header">
+          Bonk Chatroom
+          <span class="channel-title" id="current-channel-title">${contractAddr}</span>
+          <div id="wallet-connect-box" class="wallet-connect-box">
+            <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
+            <div id="wallet-address" class="wallet-address" style="display:none"></div>
+          </div>
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <form class="chat-input" id="chat-form">
+          <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
+          <button type="submit">Send</button>
+        </form>
+      `;
+      setTimeout(() => {
+        const chatMessagesNew = document.getElementById('chat-messages');
+        const chatFormNew = document.getElementById('chat-form');
+        const messageInputNew = document.getElementById('message-input');
+        loadChannel(currentChannel, chatMessagesNew);
+        bindChatFormEvents(chatFormNew, messageInputNew);
+      }, 0);
     }
   </script>
 </body>
