@@ -1097,7 +1097,8 @@
     }
 
     function shortAddr(addr) {
-      return addr ? addr.slice(0, 4) + '...' + addr.slice(-4) : '';
+      if (!addr || addr.length < 8) return addr;
+      return addr.slice(0, 4) + '...' + addr.slice(-4);
     }
 
     async function updateWalletDisplay() {
@@ -1156,27 +1157,15 @@
       filtered.forEach(addr => {
         const div = document.createElement('div');
         div.className = 'room-list-item' + (currentChannel === addr ? ' active' : '');
-        div.textContent = addr;
+        div.textContent = shortAddr(addr);
+        div.title = addr;
         div.onclick = () => {
           // 切换到该频道
           currentChannel = addr;
           channelBtns.forEach(b => b.classList.remove('active'));
           channelTitle.textContent = addr;
           mainContentBox.innerHTML = `
-            <div class="chat-header">
-              Bonk Chatroom
-              <span class="channel-title" id="current-channel-title">${addr}</span>
-              <div id="wallet-connect-box" class="wallet-connect-box">
-                <button id="wallet-connect-btn" class="wallet-connect-btn">🔗 Connect Wallet</button>
-                <div id="wallet-address" class="wallet-address" style="display:none"></div>
-              </div>
-            </div>
-            <div class="chat-messages" id="chat-messages"></div>
-            <form class="chat-input" id="chat-form">
-              <input type="text" id="message-input" placeholder="Type a message..." autocomplete="off" required />
-              <button type="submit">Send</button>
-            </form>
-          `;
+            <div class=\"chat-header\">\n              Bonk Chatroom\n              <span class=\"channel-title\" id=\"current-channel-title\">${addr}</span>\n              <div id=\"wallet-connect-box\" class=\"wallet-connect-box\">\n                <button id=\"wallet-connect-btn\" class=\"wallet-connect-btn\">🔗 Connect Wallet</button>\n                <div id=\"wallet-address\" class=\"wallet-address\" style=\"display:none\"></div>\n              </div>\n            </div>\n            <div class=\"chat-messages\" id=\"chat-messages\"></div>\n            <form class=\"chat-input\" id=\"chat-form\">\n              <input type=\"text\" id=\"message-input\" placeholder=\"Type a message...\" autocomplete=\"off\" required />\n              <button type=\"submit\">Send</button>\n            </form>\n          `;
           setTimeout(() => {
             const chatMessagesNew = document.getElementById('chat-messages');
             const chatFormNew = document.getElementById('chat-form');
