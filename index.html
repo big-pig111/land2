@@ -843,7 +843,7 @@
 
       // 特殊处理Tom
       if (name === 'Tom') {
-        img.src = 'Tom.png';
+        img.src = 'tom.png';
         n.textContent = name || '';
         box.style.display = 'flex';
         img.style.cursor = 'pointer';
@@ -926,9 +926,22 @@
     }
 
     // 昵称输入
-    usernameBtn.onclick = () => {
+    usernameBtn.onclick = async () => {
       const value = usernameInput.value.trim();
       if (value) {
+        // 判断是否为推特用户
+        const isTwitterUser = !!localStorage.getItem('chat-twitter-username');
+        if (!isTwitterUser) {
+          // 匿名用户，检查昵称唯一性
+          const anonRef = ref(db, `anonymousUsers/${value}`);
+          const snap = await get(anonRef);
+          if (snap.exists()) {
+            alert('该昵称已被其他匿名用户注册，请更换昵称。');
+            return;
+          }
+          // 写入anonymousUsers
+          await set(anonRef, { registeredAt: Date.now() });
+        }
         username = value;
         usernameModal.style.display = 'none';
         localStorage.setItem('chat-username', username);
@@ -1058,7 +1071,7 @@
       // 用户头像
       let avatarSrc = avatarUrl;
       if (user === 'Tom') {
-        avatarSrc = 'Tom.png';
+        avatarSrc = 'tom.png';
       } else if (!avatarSrc) {
         if (user === username) {
           avatarSrc = getCurrentAvatarUrl();
@@ -1208,6 +1221,14 @@
     // 退出登录逻辑
     document.getElementById('user-logout-btn').onclick = async () => {
       // 清除本地存储
+      const prevUsername = localStorage.getItem('chat-username');
+      const isTwitterUser = !!localStorage.getItem('chat-twitter-username');
+      if (prevUsername && !isTwitterUser) {
+        // 匿名用户，删除anonymousUsers下的昵称
+        try {
+          await remove(ref(db, `anonymousUsers/${prevUsername}`));
+        } catch (e) {}
+      }
       localStorage.removeItem('chat-username');
       localStorage.removeItem('chat-avatar');
       localStorage.removeItem('bonk-avatar-seed');
