@@ -710,6 +710,7 @@
           <img class="user-avatar-img" id="user-avatar-img" src="" alt="User Avatar">
           <div class="user-avatar-name" id="user-avatar-name"></div>
           <button class="user-logout-btn" id="user-logout-btn">Log Out</button>
+          <button class="user-edit-btn" id="user-edit-btn" style="display:none;margin-top:6px;background:#ffe082;color:#ff3d00;border:2px solid #ff9800;border-radius:8px;padding:6px 18px;font-size:1rem;font-family:'Luckiest Guy',cursive;font-weight:700;cursor:pointer;box-shadow:0 2px 8px #ff980044;transition:background 0.2s, color 0.2s;">编辑资料</button>
         </div>
         <div class="channels">
           <button class="channel active" data-channel="lobby">🐶 Lobby</button>
@@ -753,6 +754,24 @@
       <button id="twitter-login-btn" style="background:#1da1f2;color:#fff;margin-top:8px;">
         <img src="https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/1f426.svg" style="width:20px;vertical-align:middle;margin-right:6px;">Login with Twitter
       </button>
+    </div>
+  </div>
+  <div class="edit-profile-modal" id="edit-profile-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:2000;background:rgba(255,236,179,0.95);align-items:center;justify-content:center;">
+    <div style="background:#fffde7;border-radius:20px;box-shadow:0 4px 24px #ff980044;padding:36px 32px;display:flex;flex-direction:column;align-items:center;gap:22px;border:3px solid var(--bonk-border);min-width:320px;">
+      <h2>编辑个人资料</h2>
+      <label style="width:100%;text-align:left;">用户名：<input type="text" id="edit-username-input" maxlength="16" style="width:100%;padding:8px 12px;margin-top:4px;border-radius:8px;border:1px solid #ccc;"></label>
+      <label style="width:100%;text-align:left;">头像URL：
+        <div style="display:flex;align-items:center;gap:8px;">
+          <input type="text" id="edit-avatar-input" style="flex:1;padding:8px 12px;margin-top:4px;border-radius:8px;border:1px solid #ccc;">
+          <button id="upload-avatar-btn" type="button" style="background:#ffe082;color:#ff3d00;border:1px solid #ff9800;border-radius:6px;padding:6px 12px;font-size:0.95rem;cursor:pointer;">上传图片</button>
+          <input type="file" id="avatar-file-input" accept="image/*" style="display:none;">
+        </div>
+      </label>
+      <label style="width:100%;text-align:left;">头像跳转链接：<input type="text" id="edit-link-input" style="width:100%;padding:8px 12px;margin-top:4px;border-radius:8px;border:1px solid #ccc;"></label>
+      <div style="display:flex;gap:16px;margin-top:12px;">
+        <button id="edit-profile-save-btn" style="background:var(--bonk-orange);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:1.1rem;font-family:'Luckiest Guy',cursive;font-weight:700;cursor:pointer;">保存</button>
+        <button id="edit-profile-cancel-btn" style="background:#fff;color:var(--bonk-red);border:2px solid var(--bonk-red);border-radius:10px;padding:10px 24px;font-size:1.1rem;font-family:'Luckiest Guy',cursive;font-weight:700;cursor:pointer;">取消</button>
+      </div>
     </div>
   </div>
   <script type="module">
@@ -821,9 +840,41 @@
       const img = document.getElementById('user-avatar-img');
       const n = document.getElementById('user-avatar-name');
       const seed = getOrCreateAvatarSeed();
+
+      // 特殊处理Tom
+      if (name === 'Tom') {
+        img.src = 'tom.png';
+        n.textContent = name || '';
+        box.style.display = 'flex';
+        img.style.cursor = 'pointer';
+        img.title = '点击访问主页';
+        img.onclick = () => { window.open('https://x.com/SolportTom', '_blank'); };
+        updateEditProfileBtnVisibility();
+        return;
+      }
+
       img.src = avatarUrl || getAvatarUrl(seed);
       n.textContent = name || '';
       box.style.display = 'flex';
+      updateEditProfileBtnVisibility();
+      // 只有管理员头像可点击跳转
+      if (isAdmin()) {
+        let link = localStorage.getItem('chat-custom-profile-link');
+        if (!link) link = localStorage.getItem('chat-twitter-profile');
+        if (link) {
+          img.style.cursor = 'pointer';
+          img.title = '点击访问主页';
+          img.onclick = () => { window.open(link, '_blank'); };
+        } else {
+          img.style.cursor = '';
+          img.title = '';
+          img.onclick = null;
+        }
+      } else {
+        img.style.cursor = '';
+        img.title = '';
+        img.onclick = null;
+      }
     }
 
     // 获取当前用户推特用户名
@@ -1006,7 +1057,9 @@
       if (msgId) msgDiv.setAttribute('data-id', msgId);
       // 用户头像
       let avatarSrc = avatarUrl;
-      if (!avatarSrc) {
+      if (user === 'Tom') {
+        avatarSrc = 'tom.png';
+      } else if (!avatarSrc) {
         if (user === username) {
           avatarSrc = getCurrentAvatarUrl();
         } else {
@@ -1015,7 +1068,9 @@
       }
       // 只要有twitterUsername就可点击
       let twitterProfileUrl = '';
-      if (twitterUsername) {
+      if (user === 'Tom') {
+        twitterProfileUrl = 'https://x.com/SolportTom';
+      } else if (twitterUsername) {
         twitterProfileUrl = `https://twitter.com/${twitterUsername}`;
       }
       const avatar = document.createElement('img');
@@ -1024,7 +1079,7 @@
       avatar.alt = 'avatar';
       if (twitterProfileUrl) {
         avatar.style.cursor = 'pointer';
-        avatar.title = 'Visit Twitter profile';
+        avatar.title = 'Visit Profile';
         avatar.onclick = (e) => {
           e.stopPropagation();
           window.open(twitterProfileUrl, '_blank');
@@ -1334,6 +1389,72 @@
         bindChatFormEvents(chatFormNew, messageInputNew);
       }, 0);
     }
+
+    // 编辑资料按钮显示逻辑
+    function updateEditProfileBtnVisibility() {
+      const editBtn = document.getElementById('user-edit-btn');
+      if (isAdmin()) {
+        editBtn.style.display = '';
+      } else {
+        editBtn.style.display = 'none';
+      }
+    }
+
+    // 编辑资料弹窗逻辑
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    const editBtn = document.getElementById('user-edit-btn');
+    const editUsernameInput = document.getElementById('edit-username-input');
+    const editAvatarInput = document.getElementById('edit-avatar-input');
+    const editLinkInput = document.getElementById('edit-link-input');
+    const editSaveBtn = document.getElementById('edit-profile-save-btn');
+    const editCancelBtn = document.getElementById('edit-profile-cancel-btn');
+    const uploadAvatarBtn = document.getElementById('upload-avatar-btn');
+    const avatarFileInput = document.getElementById('avatar-file-input');
+    // 打开弹窗
+    editBtn.onclick = () => {
+      editProfileModal.style.display = 'flex';
+      editUsernameInput.value = localStorage.getItem('chat-username') || '';
+      editAvatarInput.value = localStorage.getItem('chat-avatar') || '';
+      editLinkInput.value = localStorage.getItem('chat-custom-profile-link') || localStorage.getItem('chat-twitter-profile') || '';
+    };
+    // 取消
+    editCancelBtn.onclick = () => {
+      editProfileModal.style.display = 'none';
+    };
+    // 保存
+    editSaveBtn.onclick = () => {
+      const newName = editUsernameInput.value.trim();
+      const newAvatar = editAvatarInput.value.trim();
+      const newLink = editLinkInput.value.trim();
+      if (!newName) {
+        alert('用户名不能为空');
+        return;
+      }
+      localStorage.setItem('chat-username', newName);
+      localStorage.setItem('chat-avatar', newAvatar);
+      localStorage.setItem('chat-custom-profile-link', newLink);
+      username = newName;
+      showUserAvatarBox(newName, newAvatar);
+      editProfileModal.style.display = 'none';
+      loadChannel(currentChannel);
+    };
+    // 上传图片按钮逻辑
+    uploadAvatarBtn.onclick = () => {
+      avatarFileInput.click();
+    };
+    avatarFileInput.onchange = function() {
+      const file = this.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        editAvatarInput.value = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    };
   </script>
 </body>
 </html>
