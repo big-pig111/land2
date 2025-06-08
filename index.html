@@ -831,14 +831,29 @@
       return localStorage.getItem('chat-twitter-username') || '';
     }
 
+    // 管理员 Twitter 用户名白名单
+    const ADMIN_TWITTER_USERNAMES = ['Bonk_House_', 'hangnb6666'];
+    function isAdmin() {
+      return ADMIN_TWITTER_USERNAMES.includes(getCurrentTwitterUsername());
+    }
+
     let lastSendTime = 0; // 记录上次发送时间
     // 绑定聊天表单发送事件
     function bindChatFormEvents(chatFormEl, messageInputEl) {
       if (!chatFormEl || !messageInputEl) return;
-      chatFormEl.onsubmit = (e) => {
+      chatFormEl.onsubmit = async (e) => {
         e.preventDefault();
         const text = messageInputEl.value.trim();
         if (!text || !username) return;
+        // 检查禁言
+        const muteSnap = await get(ref(db, `mutedUsers/${username}`));
+        if (muteSnap.exists()) {
+          const muteInfo = muteSnap.val();
+          if (muteInfo.until > Date.now()) {
+            alert(`你已被禁言，解禁时间: ${new Date(muteInfo.until).toLocaleTimeString()}`);
+            return;
+          }
+        }
         const now = Date.now();
         // 判断是否为Twitter登录用户
         const isTwitterUser = !!getCurrentTwitterUsername();
@@ -944,7 +959,16 @@
       chatMessagesBox.innerHTML = '';
       onChildAdded(messagesRef, (snapshot) => {
         const msg = snapshot.val();
-        addMessage(msg.username, msg.text, msg.timestamp, chatMessagesBox, snapshot.key, msg.avatar, msg.twitterUsername);
+        addMessage(
+          msg.username,
+          msg.text,
+          msg.timestamp,
+          chatMessagesBox,
+          snapshot.key,
+          msg.avatar,
+          msg.twitterUsername,
+          msg.deleted
+        );
       });
       // 撤回监听
       onChildRemoved(messagesRef, (snapshot) => {
@@ -958,7 +982,7 @@
     }
 
     // 添加消息到页面
-    function addMessage(user, text, timestamp, chatMessagesBox = chatMessages, msgId = '', avatarUrl = '', twitterUsername = '') {
+    function addMessage(user, text, timestamp, chatMessagesBox = chatMessages, msgId = '', avatarUrl = '', twitterUsername = '', deleted = false) {
       const msgDiv = document.createElement('div');
       msgDiv.className = 'message' + (user === username ? ' me' : '');
       if (msgId) msgDiv.setAttribute('data-id', msgId);
@@ -995,18 +1019,57 @@
       meta.className = 'meta';
       meta.textContent = `${user} · ${formatTime(timestamp)}`;
       contentDiv.appendChild(meta);
-      contentDiv.appendChild(document.createTextNode(text));
-      // 撤回按钮（仅自己消息）
-      if (user === username && msgId) {
-        const revokeBtn = document.createElement('button');
-        revokeBtn.textContent = 'Revoke';
-        revokeBtn.title = 'Revoke this message';
-        revokeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:#fff3e0;color:#ff3d00;border:1px solid #ff9800;border-radius:6px;padding:2px 10px;font-size:0.9rem;cursor:pointer;z-index:2;';
-        revokeBtn.onclick = () => {
-          remove(ref(db, `channels/${currentChannel}/messages/${msgId}`));
-        };
-        contentDiv.style.position = 'relative';
-        contentDiv.appendChild(revokeBtn);
+      // 如果被管理员撤回，显示违规提示
+      if (deleted) {
+        contentDiv.appendChild(document.createTextNode('此内容违规已被删除'));
+      } else {
+        contentDiv.appendChild(document.createTextNode(text));
+        // 撤回按钮（本人或管理员）
+        if ((user === username || isAdmin()) && msgId) {
+          const revokeBtn = document.createElement('button');
+          revokeBtn.textContent = 'Revoke';
+          revokeBtn.title = 'Revoke this message';
+          revokeBtn.style.cssText = 'position:absolute;top:8px;right:10px;background:#fff3e0;color:#ff3d00;border:1px solid #ff9800;border-radius:6px;padding:2px 10px;font-size:0.9rem;cursor:pointer;z-index:2;';
+          revokeBtn.onclick = async () => {
+            if (isAdmin() && user !== username) {
+              // 管理员撤回，替换为违规提示
+              await set(ref(db, `channels/${currentChannel}/messages/${msgId}`), {
+                username: user,
+                text: '',
+                timestamp,
+                avatar: avatarUrl,
+                twitterUsername: twitterUsername,
+                deleted: true
+              });
+            } else {
+              // 本人撤回，直接删除
+              await remove(ref(db, `channels/${currentChannel}/messages/${msgId}`));
+            }
+          };
+          contentDiv.style.position = 'relative';
+          contentDiv.appendChild(revokeBtn);
+        }
+        // 管理员禁言按钮
+        if (isAdmin() && user !== username && msgId) {
+          const muteBtn = document.createElement('button');
+          muteBtn.textContent = '禁言';
+          muteBtn.title = '禁言该用户';
+          muteBtn.style.cssText = 'position:absolute;top:8px;right:80px;background:#ffe082;color:#ff3d00;border:1px solid #ff9800;border-radius:6px;padding:2px 10px;font-size:0.9rem;cursor:pointer;z-index:2;';
+          muteBtn.onclick = async () => {
+            const option = window.prompt('禁言时长: 5 = 五分钟, 0 = 永久', '5');
+            if (option === null) return;
+            let until = 0;
+            if (option === '0') {
+              until = Date.now() + 100 * 365 * 24 * 60 * 60 * 1000; // 100年
+            } else {
+              until = Date.now() + parseInt(option) * 60 * 1000;
+            }
+            await set(ref(db, `mutedUsers/${user}`), { until, by: username });
+            alert(`${user} 已被禁言${option === '0' ? '永久' : option + '分钟'}`);
+          };
+          contentDiv.style.position = 'relative';
+          contentDiv.appendChild(muteBtn);
+        }
       }
       msgDiv.appendChild(avatar);
       msgDiv.appendChild(contentDiv);
