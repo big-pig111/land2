@@ -941,6 +941,9 @@
           }
           // 写入anonymousUsers
           await set(anonRef, { registeredAt: Date.now() });
+          // 清除推特相关本地存储
+          localStorage.removeItem('chat-twitter-profile');
+          localStorage.removeItem('chat-twitter-username');
         }
         username = value;
         usernameModal.style.display = 'none';
