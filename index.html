@@ -17,15 +17,13 @@
 </head>
 <body>
 <div id="container">
-  <h2>WebRTC + Firebase 直播 Demo</h2>
+  <h2>WebRTC + Firebase 直播 Demo（单一直播间）</h2>
   <div id="auth" class="row">
     <button id="login">匿名登录</button>
     <span id="user"></span>
   </div>
   <div id="room" class="row" style="display:none;">
-    <input id="roomId" placeholder="房间号" />
-    <button id="create">创建直播</button>
-    <button id="join">观看直播</button>
+    <button id="startLive">开始直播（第一个进入者）</button>
   </div>
   <div id="live" class="row" style="display:none;">
     <video id="localVideo" autoplay muted playsinline></video>
@@ -58,7 +56,7 @@ const db = firebase.firestore();
 
 // ====== 2. 全局变量 =====
 let user = null;
-let roomId = '';
+let roomId = 'mainlive'; // 固定房间号
 let isHost = false;
 let pc = null;
 let localStream = null;
@@ -69,9 +67,6 @@ let signalUnsub = null;
 const loginBtn = document.getElementById('login');
 const userSpan = document.getElementById('user');
 const roomDiv = document.getElementById('room');
-const roomIdInput = document.getElementById('roomId');
-const createBtn = document.getElementById('create');
-const joinBtn = document.getElementById('join');
 const liveDiv = document.getElementById('live');
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
@@ -81,6 +76,7 @@ const chatboxDiv = document.getElementById('chatbox');
 const chatDiv = document.getElementById('chat');
 const msgInput = document.getElementById('msg');
 const sendBtn = document.getElementById('send');
+const startLiveBtn = document.getElementById('startLive');
 
 // ====== 4. 登录逻辑 =====
 loginBtn.onclick = async () => {
@@ -91,22 +87,36 @@ auth.onAuthStateChanged(u => {
     user = u;
     userSpan.textContent = `已登录: ${u.uid}`;
     loginBtn.style.display = 'none';
-    roomDiv.style.display = '';
+    // 检查房间是否存在，动态调整按钮文案
+    db.collection('rooms').doc(roomId).get().then(roomDoc => {
+      startLiveBtn.disabled = true;
+      if (!roomDoc.exists) {
+        startLiveBtn.textContent = '开始直播（第一个进入者）';
+      } else {
+        startLiveBtn.textContent = '观看直播';
+      }
+      roomDiv.style.display = '';
+      startLiveBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
+      setTimeout(() => { startLiveBtn.disabled = false; }, 200);
+    });
   }
 });
 
 // ====== 5. 创建/加入房间 =====
-createBtn.onclick = async () => {
-  roomId = roomIdInput.value.trim();
-  if (!roomId) return alert('请输入房间号');
-  isHost = true;
-  await startLive();
-};
-joinBtn.onclick = async () => {
-  roomId = roomIdInput.value.trim();
-  if (!roomId) return alert('请输入房间号');
-  isHost = false;
-  await startLive();
+startLiveBtn.onclick = async () => {
+  // 检查房间是否存在，决定身份
+  const roomDoc = await db.collection('rooms').doc(roomId).get();
+  if (!roomDoc.exists) {
+    isHost = true;
+    await startLive();
+    listenChat();
+  } else {
+    isHost = false;
+    await startLive();
+    listenChat();
+  }
+  // 进入后禁用按钮，防止重复点击
+  startLiveBtn.disabled = true;
 };
 
 // ====== 6. WebRTC 相关 =====
@@ -115,7 +125,7 @@ async function startLive() {
   roomDiv.style.display = 'none';
   liveDiv.style.display = '';
   chatboxDiv.style.display = '';
-  statusDiv.textContent = isHost ? '你是主播，正在推流...' : '你是观众，等待视频...';
+  statusDiv.textContent = isHost ? '你是主播，正在推流（仅第一个进入者可开播）' : '你是观众，正在观看直播';
   pc = new RTCPeerConnection(rtcConfig);
   pc.onicecandidate = e => {
     if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate });
@@ -124,6 +134,7 @@ async function startLive() {
     remoteVideo.srcObject = e.streams[0];
   };
   if (isHost) {
+    localVideo.style.display = '';
     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     localVideo.srcObject = localStream;
     localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
@@ -137,8 +148,6 @@ async function startLive() {
     if (!roomDoc.exists) return alert('房间不存在');
     const offer = roomDoc.data().offer;
     await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    const stream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
-    stream.getTracks().forEach(track => pc.addTrack(track, stream)); // 观众只发音频（可选）
     const answer = await pc.createAnswer();
     await pc.setLocalDescription(answer);
     await db.collection('rooms').doc(roomId).update({ answer: answer });
@@ -148,7 +157,24 @@ async function startLive() {
 function listenSignal() {
   signalUnsub = db.collection('rooms').doc(roomId).onSnapshot(async doc => {
     const data = doc.data();
-    if (!data) return;
+    if (!data) {
+      // 房间被删除，观众端刷新按钮文案
+      alert('主播已结束直播');
+      startLiveBtn.disabled = false;
+      startLiveBtn.textContent = '开始直播（第一个进入者）';
+      liveDiv.style.display = 'none';
+      chatboxDiv.style.display = 'none';
+      roomDiv.style.display = '';
+      localVideo.style.display = '';
+      localVideo.srcObject = null;
+      remoteVideo.srcObject = null;
+      if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+      }
+      startLiveBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
+      return;
+    }
     if (!isHost && data.answer && !pc.currentRemoteDescription) {
       await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
     }
@@ -178,9 +204,26 @@ hangupBtn.onclick = async () => {
   liveDiv.style.display = 'none';
   chatboxDiv.style.display = 'none';
   roomDiv.style.display = '';
+  localVideo.style.display = '';
+  localVideo.srcObject = null;
+  remoteVideo.srcObject = null;
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+    localStream = null;
+  }
   if (isHost) {
     await db.collection('rooms').doc(roomId).delete();
   }
+  setTimeout(async () => {
+    startLiveBtn.disabled = false;
+    const roomDoc = await db.collection('rooms').doc(roomId).get();
+    if (!roomDoc.exists) {
+      startLiveBtn.textContent = '开始直播（第一个进入者）';
+    } else {
+      startLiveBtn.textContent = '观看直播';
+    }
+    startLiveBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
+  }, 200);
 };
 
 // ====== 7. 聊天室 =====
@@ -213,23 +256,6 @@ sendBtn.onclick = async () => {
     ts: Date.now()
   });
   msgInput.value = '';
-};
-roomIdInput.oninput = () => {
-  chatDiv.innerHTML = '';
-};
-createBtn.onclick = async () => {
-  roomId = roomIdInput.value.trim();
-  if (!roomId) return alert('请输入房间号');
-  isHost = true;
-  await startLive();
-  listenChat();
-};
-joinBtn.onclick = async () => {
-  roomId = roomIdInput.value.trim();
-  if (!roomId) return alert('请输入房间号');
-  isHost = false;
-  await startLive();
-  listenChat();
 };
 </script>
 </body>
