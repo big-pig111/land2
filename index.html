@@ -2,261 +2,248 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>WebRTC + Firebase 直播 Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>naibubu Peripheral Site</title>
+  <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f5f5f5; }
-    #container { max-width: 700px; margin: 30px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
-    video { width: 100%; max-height: 320px; background: #222; margin-bottom: 10px; }
-    #chat { height: 180px; overflow-y: auto; border: 1px solid #ddd; padding: 8px; background: #fafafa; margin-bottom: 8px; }
-    #msg { width: 80%; }
-    #send { width: 18%; }
-    .row { margin-bottom: 12px; }
-    .me { color: #1976d2; }
-    .sys { color: #888; font-style: italic; }
+    body {
+      background: #FFF8F0;
+      font-family: 'ZCOOL KuaiLe', cursive, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #FF69B4;
+      /* labubu浮雕背景 */
+      background-image: url('data:image/svg+xml;utf8,<svg width="80" height="80" xmlns="http://www.w3.org/2000/svg"><ellipse cx="40" cy="40" rx="30" ry="36" fill="%23ffe4ec" fill-opacity="0.3"/><ellipse cx="25" cy="20" rx="8" ry="16" fill="%23ffd6e0" fill-opacity="0.25"/><ellipse cx="55" cy="20" rx="8" ry="16" fill="%23ffd6e0" fill-opacity="0.25"/></svg>');
+      background-size: 120px 120px;
+      background-repeat: repeat;
+    }
+    header {
+      text-align: center;
+      padding: 32px 0 8px 0;
+      position: relative;
+    }
+    .labubu-svg {
+      position: absolute;
+      top: 10px;
+      width: 48px;
+      height: 48px;
+    }
+    .labubu-svg.left {
+      left: 24px;
+    }
+    .labubu-svg.right {
+      right: 24px;
+      transform: scaleX(-1);
+    }
+    .logo {
+      font-size: 2.5rem;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: #FFB6C1;
+      text-shadow: 2px 2px 0 #FFD700;
+    }
+    .subtitle {
+      font-size: 1.2rem;
+      color: #FF69B4;
+      margin-top: 8px;
+    }
+    .main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+    }
+    .photo-area {
+      position: relative;
+      width: 340px;
+      height: 420px;
+      margin: 32px 0;
+      background: #fff0f6;
+      border-radius: 32px;
+      box-shadow: 0 8px 32px #ffb6c1aa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .labubu-face {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 56px;
+      height: 56px;
+      z-index: 4;
+    }
+    .labubu-face.left {
+      left: -60px;
+    }
+    .labubu-face.right {
+      right: -60px;
+      transform: translateY(-50%) scaleX(-1);
+    }
+    .arrow-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #FF69B4;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 48px;
+      height: 48px;
+      font-size: 2rem;
+      cursor: pointer;
+      z-index: 2;
+      opacity: 0.85;
+      transition: background 0.2s;
+    }
+    .arrow-btn:hover {
+      background: #FFD700;
+      color: #FF69B4;
+    }
+    .arrow-left {
+      left: 8px;
+    }
+    .arrow-right {
+      right: 8px;
+    }
+    .naibubu-img {
+      width: 320px;
+      height: 400px;
+      object-fit: cover;
+      border-radius: 28px;
+      filter: drop-shadow(0 4px 16px #ffb6c1aa);
+      z-index: 1;
+    }
+    /* 卡通露奶遮罩 */
+    .nipple-mask {
+      position: absolute;
+      left: 50%;
+      top: 65%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 60px;
+      pointer-events: none;
+      z-index: 3;
+    }
+    .nipple-mask .nipple {
+      position: absolute;
+      width: 36px;
+      height: 36px;
+      background: #fff0f6;
+      border: 3px solid #FF69B4;
+      border-radius: 50%;
+      top: 12px;
+    }
+    .nipple-mask .nipple.left {
+      left: 0;
+    }
+    .nipple-mask .nipple.right {
+      right: 0;
+    }
+    .nipple-mask .dot {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: #FFD700;
+      border-radius: 50%;
+      top: 23px;
+    }
+    .nipple-mask .dot.left {
+      left: 10px;
+    }
+    .nipple-mask .dot.right {
+      right: 10px;
+    }
+    nav {
+      text-align: center;
+      margin-top: 24px;
+    }
+    nav a {
+      color: #FF69B4;
+      text-decoration: none;
+      margin: 0 18px;
+      font-size: 1.1rem;
+      transition: color 0.2s;
+    }
+    nav a:hover {
+      color: #FFD700;
+    }
+    footer {
+      text-align: center;
+      color: #FFB6C1;
+      font-size: 0.9rem;
+      margin: 32px 0 12px 0;
+      position: relative;
+    }
+    .footer-labubu {
+      position: absolute;
+      bottom: 0;
+      width: 48px;
+      height: 48px;
+    }
+    .footer-labubu.left {
+      left: 24px;
+    }
+    .footer-labubu.right {
+      right: 24px;
+      transform: scaleX(-1);
+    }
   </style>
 </head>
 <body>
-<div id="container">
-  <h2>WebRTC + Firebase 直播 Demo（单一直播间）</h2>
-  <div id="auth" class="row">
-    <button id="login">匿名登录</button>
-    <span id="user"></span>
+  <header>
+    <svg class="labubu-svg left" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="18" ry="16" fill="#FFD6E0"/><ellipse cx="12" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="36" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="24" cy="28" rx="10" ry="8" fill="#fff"/><ellipse cx="18" cy="26" rx="2" ry="3" fill="#FF69B4"/><ellipse cx="30" cy="26" rx="2" ry="3" fill="#FF69B4"/></svg>
+    <div class="logo">naibubu</div>
+    <svg class="labubu-svg right" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="18" ry="16" fill="#FFD6E0"/><ellipse cx="12" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="36" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="24" cy="28" rx="10" ry="8" fill="#fff"/><ellipse cx="18" cy="26" rx="2" ry="3" fill="#FF69B4"/><ellipse cx="30" cy="26" rx="2" ry="3" fill="#FF69B4"/></svg>
+    <div class="subtitle">Trendy Exposed × labubu Peripheral Site</div>
+  </header>
+  <div class="main">
+    <div class="photo-area">
+      <svg class="labubu-face left" viewBox="0 0 56 56"><ellipse cx="28" cy="32" rx="20" ry="18" fill="#FFD6E0"/><ellipse cx="14" cy="10" rx="7" ry="14" fill="#FFB6C1"/><ellipse cx="42" cy="10" rx="7" ry="14" fill="#FFB6C1"/><ellipse cx="28" cy="32" rx="12" ry="10" fill="#fff"/><ellipse cx="22" cy="30" rx="2.5" ry="3.5" fill="#FF69B4"/><ellipse cx="34" cy="30" rx="2.5" ry="3.5" fill="#FF69B4"/></svg>
+      <button class="arrow-btn arrow-left" onclick="prevPhoto()">&#8592;</button>
+      <img id="naibubuImg" class="naibubu-img" src="https://placehold.co/320x400/FFB6C1/FFF?text=naibubu+1" alt="naibubu photo">
+      <div class="nipple-mask">
+        <div class="nipple left"></div>
+        <div class="nipple right"></div>
+        <div class="dot left"></div>
+        <div class="dot right"></div>
+      </div>
+      <button class="arrow-btn arrow-right" onclick="nextPhoto()">&#8594;</button>
+      <svg class="labubu-face right" viewBox="0 0 56 56"><ellipse cx="28" cy="32" rx="20" ry="18" fill="#FFD6E0"/><ellipse cx="14" cy="10" rx="7" ry="14" fill="#FFB6C1"/><ellipse cx="42" cy="10" rx="7" ry="14" fill="#FFB6C1"/><ellipse cx="28" cy="32" rx="12" ry="10" fill="#fff"/><ellipse cx="22" cy="30" rx="2.5" ry="3.5" fill="#FF69B4"/><ellipse cx="34" cy="30" rx="2.5" ry="3.5" fill="#FF69B4"/></svg>
+    </div>
   </div>
-  <div id="room" class="row" style="display:none;">
-    <button id="startLive">开始直播（第一个进入者）</button>
-  </div>
-  <div id="live" class="row" style="display:none;">
-    <video id="localVideo" autoplay muted playsinline></video>
-    <video id="remoteVideo" autoplay playsinline></video>
-    <div id="status"></div>
-    <button id="hangup">结束/离开</button>
-  </div>
-  <div id="chatbox" class="row" style="display:none;">
-    <div id="chat"></div>
-    <input id="msg" placeholder="输入消息..." />
-    <button id="send">发送</button>
-  </div>
-</div>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-// ====== 1. Firebase 配置（请替换为你自己的配置） =====
-const firebaseConfig = {
-  apiKey: "AIzaSyCUQFtyMIuCN_xEJhK81iAqiq1yf1SCKGo",
-  authDomain: "live-damo.firebaseapp.com",
-  projectId: "live-damo",
-  storageBucket: "live-damo.appspot.com",
-  messagingSenderId: "202717835129",
-  appId: "1:202717835129:web:b09623c33f6596810dc9a8"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
-
-// ====== 2. 全局变量 =====
-let user = null;
-let roomId = 'mainlive'; // 固定房间号
-let isHost = false;
-let pc = null;
-let localStream = null;
-let chatUnsub = null;
-let signalUnsub = null;
-
-// ====== 3. DOM 元素 =====
-const loginBtn = document.getElementById('login');
-const userSpan = document.getElementById('user');
-const roomDiv = document.getElementById('room');
-const liveDiv = document.getElementById('live');
-const localVideo = document.getElementById('localVideo');
-const remoteVideo = document.getElementById('remoteVideo');
-const statusDiv = document.getElementById('status');
-const hangupBtn = document.getElementById('hangup');
-const chatboxDiv = document.getElementById('chatbox');
-const chatDiv = document.getElementById('chat');
-const msgInput = document.getElementById('msg');
-const sendBtn = document.getElementById('send');
-const startLiveBtn = document.getElementById('startLive');
-
-// ====== 4. 登录逻辑 =====
-loginBtn.onclick = async () => {
-  await auth.signInAnonymously();
-};
-auth.onAuthStateChanged(u => {
-  if (u) {
-    user = u;
-    userSpan.textContent = `已登录: ${u.uid}`;
-    loginBtn.style.display = 'none';
-    // 检查房间是否存在，动态调整按钮文案
-    db.collection('rooms').doc(roomId).get().then(roomDoc => {
-      startLiveBtn.disabled = true;
-      if (!roomDoc.exists) {
-        startLiveBtn.textContent = '开始直播（第一个进入者）';
-      } else {
-        startLiveBtn.textContent = '观看直播';
-      }
-      roomDiv.style.display = '';
-      startLiveBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
-      setTimeout(() => { startLiveBtn.disabled = false; }, 200);
-    });
-  }
-});
-
-// ====== 5. 创建/加入房间 =====
-startLiveBtn.onclick = async () => {
-  // 检查房间是否存在，决定身份
-  const roomDoc = await db.collection('rooms').doc(roomId).get();
-  if (!roomDoc.exists) {
-    isHost = true;
-    await startLive();
-    listenChat();
-  } else {
-    isHost = false;
-    await startLive();
-    listenChat();
-  }
-  // 进入后禁用按钮，防止重复点击
-  startLiveBtn.disabled = true;
-};
-
-// ====== 6. WebRTC 相关 =====
-const rtcConfig = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-async function startLive() {
-  roomDiv.style.display = 'none';
-  liveDiv.style.display = '';
-  chatboxDiv.style.display = '';
-  statusDiv.textContent = isHost ? '你是主播，正在推流（仅第一个进入者可开播）' : '你是观众，正在观看直播';
-  pc = new RTCPeerConnection(rtcConfig);
-  pc.onicecandidate = e => {
-    if (e.candidate) sendSignal({ type: 'candidate', candidate: e.candidate });
-  };
-  pc.ontrack = e => {
-    remoteVideo.srcObject = e.streams[0];
-  };
-  if (isHost) {
-    localVideo.style.display = '';
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    localVideo.srcObject = localStream;
-    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    await db.collection('rooms').doc(roomId).set({ offer: offer, created: Date.now() });
-    listenSignal();
-  } else {
-    localVideo.style.display = 'none';
-    const roomDoc = await db.collection('rooms').doc(roomId).get();
-    if (!roomDoc.exists) return alert('房间不存在');
-    const offer = roomDoc.data().offer;
-    await pc.setRemoteDescription(new RTCSessionDescription(offer));
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await db.collection('rooms').doc(roomId).update({ answer: answer });
-    listenSignal();
-  }
-}
-function listenSignal() {
-  signalUnsub = db.collection('rooms').doc(roomId).onSnapshot(async doc => {
-    const data = doc.data();
-    if (!data) {
-      // 房间被删除，观众端刷新按钮文案
-      alert('主播已结束直播');
-      startLiveBtn.disabled = false;
-      startLiveBtn.textContent = '开始直播（第一个进入者）';
-      liveDiv.style.display = 'none';
-      chatboxDiv.style.display = 'none';
-      roomDiv.style.display = '';
-      localVideo.style.display = '';
-      localVideo.srcObject = null;
-      remoteVideo.srcObject = null;
-      if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-      }
-      startLiveBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
-      return;
+  <nav>
+    <a href="#">Home</a>
+    <a href="#">Dress Up</a>
+    <a href="#">About</a>
+    <a href="#">Contact Us</a>
+  </nav>
+  <footer>
+    <svg class="footer-labubu left" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="18" ry="16" fill="#FFD6E0"/><ellipse cx="12" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="36" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="24" cy="28" rx="10" ry="8" fill="#fff"/><ellipse cx="18" cy="26" rx="2" ry="3" fill="#FF69B4"/><ellipse cx="30" cy="26" rx="2" ry="3" fill="#FF69B4"/></svg>
+    &copy; 2025 naibubu. All rights reserved.
+    <svg class="footer-labubu right" viewBox="0 0 48 48"><ellipse cx="24" cy="28" rx="18" ry="16" fill="#FFD6E0"/><ellipse cx="12" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="36" cy="8" rx="6" ry="12" fill="#FFB6C1"/><ellipse cx="24" cy="28" rx="10" ry="8" fill="#fff"/><ellipse cx="18" cy="26" rx="2" ry="3" fill="#FF69B4"/><ellipse cx="30" cy="26" rx="2" ry="3" fill="#FF69B4"/></svg>
+  </footer>
+  <script>
+    // 示例图片数组，后续可替换为真实图片
+    const photos = [
+      'https://placehold.co/320x400/FFB6C1/FFF?text=naibubu+1',
+      'https://placehold.co/320x400/FFD700/FFF?text=naibubu+2'
+    ];
+    let current = 0;
+    function showPhoto(idx) {
+      const img = document.getElementById('naibubuImg');
+      img.src = photos[idx];
     }
-    if (!isHost && data.answer && !pc.currentRemoteDescription) {
-      await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+    function prevPhoto() {
+      current = (current - 1 + photos.length) % photos.length;
+      showPhoto(current);
     }
-  });
-  db.collection('rooms').doc(roomId).collection('candidates').onSnapshot(snapshot => {
-    snapshot.docChanges().forEach(change => {
-      if (change.type === 'added') {
-        const c = change.doc.data();
-        if (c.uid !== user.uid) {
-          pc.addIceCandidate(new RTCIceCandidate(c.candidate));
-        }
-      }
-    });
-  });
-}
-async function sendSignal(data) {
-  if (data.type === 'candidate') {
-    await db.collection('rooms').doc(roomId).collection('candidates').add({
-      candidate: data.candidate,
-      uid: user.uid
-    });
-  }
-}
-hangupBtn.onclick = async () => {
-  if (pc) pc.close();
-  if (signalUnsub) signalUnsub();
-  liveDiv.style.display = 'none';
-  chatboxDiv.style.display = 'none';
-  roomDiv.style.display = '';
-  localVideo.style.display = '';
-  localVideo.srcObject = null;
-  remoteVideo.srcObject = null;
-  if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-    localStream = null;
-  }
-  if (isHost) {
-    await db.collection('rooms').doc(roomId).delete();
-  }
-  setTimeout(async () => {
-    startLiveBtn.disabled = false;
-    const roomDoc = await db.collection('rooms').doc(roomId).get();
-    if (!roomDoc.exists) {
-      startLiveBtn.textContent = '开始直播（第一个进入者）';
-    } else {
-      startLiveBtn.textContent = '观看直播';
+    function nextPhoto() {
+      current = (current + 1) % photos.length;
+      showPhoto(current);
     }
-    startLiveBtn.scrollIntoView({behavior: 'smooth', block: 'center'});
-  }, 200);
-};
-
-// ====== 7. 聊天室 =====
-function appendMsg(msg, cls = '') {
-  const div = document.createElement('div');
-  div.textContent = msg;
-  if (cls) div.className = cls;
-  chatDiv.appendChild(div);
-  chatDiv.scrollTop = chatDiv.scrollHeight;
-}
-function listenChat() {
-  if (chatUnsub) chatUnsub();
-  chatDiv.innerHTML = '';
-  chatUnsub = db.collection('rooms').doc(roomId).collection('chat')
-    .orderBy('ts').onSnapshot(snapshot => {
-      snapshot.docChanges().forEach(change => {
-        if (change.type === 'added') {
-          const d = change.doc.data();
-          appendMsg(`${d.uid === user.uid ? '我' : d.uid}: ${d.text}`, d.uid === user.uid ? 'me' : '');
-        }
-      });
-    });
-}
-sendBtn.onclick = async () => {
-  const text = msgInput.value.trim();
-  if (!text) return;
-  await db.collection('rooms').doc(roomId).collection('chat').add({
-    uid: user.uid,
-    text,
-    ts: Date.now()
-  });
-  msgInput.value = '';
-};
-</script>
+  </script>
 </body>
 </html>
